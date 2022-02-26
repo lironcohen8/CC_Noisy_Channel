@@ -110,6 +110,7 @@ void initRecieverSocket() {
 }
 
 void acceptConnections() {
+    // Accepting sender connection
     senderConnSockfd = accept(senderListenSockfd, (struct sockaddr*)&senderConnSockAddr, &addrSize);
     if (senderConnSockfd < 0) {
         perror("Accept sender connection failed");
@@ -125,6 +126,7 @@ void acceptConnections() {
 }
 
 void readOriginalDataFromSocket() {
+    // TODO
 }
 
 void addRandomNoise() {
@@ -149,6 +151,7 @@ void addDeterministicNoise() {
 }
 
 void writePerturbedDataToSocket() {
+    // TODO
 }
 
 int main(int argc, char* argv[]) {
