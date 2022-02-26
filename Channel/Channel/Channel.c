@@ -152,7 +152,6 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-
     // Accepting reciever connection
     addrLen = sizeof(recieverConnSockAddr);
     recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrLen);
