@@ -6,36 +6,31 @@
 
 WSADATA wsaData;
 char* noiseMethod, * dataBuffer, * IPAddress;
-FILE* filePointer;
-short channelSenderPort;
 struct sockaddr_in senderListenSockAddr, recieverListenSockAddr, senderConnSockAddr, recieverConnSockAddr;
 int senderListenSockfd, recieverListenSockfd, senderConnSockfd, recieverConnSockfd;
-int retVal = 0, randomSeed = 0, cycleLength = 0, fileLength = 0, bytesRead = 0, bytesWritten = 0, bytesCurrWrite = 0;
+int retVal = 0, randomSeed = 0, cycleLength = 0, fileLength = 0, bytesRead = 0, bytesCurrRead = 0, bytesWritten = 0, bytesCurrWrite = 0;
 int isRandomNoise = 0, numberOfFlippedBits = 0;
+int addrSize = sizeof(struct sockaddr_in);
 double noiseProbability;
 
-void addRandomNoise() {
-    memset(&dataBuffer, 0, 26); // TODO change number
-    srand(randomSeed);
-    for (int i = 0; i < sizeof(dataBuffer); i++) {
-        double randomDouble = (double)rand() / (double)RAND_MAX;
-        int toFlip = randomDouble < noiseProbability;
-        if (toFlip > 0) {
-            dataBuffer[i] = 1 - dataBuffer[i];
-            numberOfFlippedBits++;
-        }
+void parseArguments(char* argv[]) {
+    noiseMethod = argv[1];
+    if (strcmp(noiseMethod, "-r") == 0) { // Random noise
+        sscanf_s(argv[2], "%lf", &noiseProbability);
+        noiseProbability /= pow(2, 16);
+        sscanf_s(argv[3], "%du", &randomSeed);
+        isRandomNoise = 1;
+    }
+    else if (strcmp(noiseMethod, "-d") == 0) { // Deterministic noise
+        sscanf_s(argv[2], "%du", &cycleLength);
+    }
+    else {
+        perror("Not a legal noise flag");
+        exit(1);
     }
 }
 
-void addDeterministicNoise() {
-    memset(&dataBuffer, 0, 26); // TODO change number
-    for (int i = cycleLength - 1; i < sizeof(dataBuffer); i += cycleLength) {
-        dataBuffer[i] = 1 - dataBuffer[i];
-        numberOfFlippedBits++;
-    }
-}
-
-void senderSocketInit() {
+void initSenderSocket() {
     // Creating sender socket for listening
     senderListenSockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (senderListenSockfd < 0) {
@@ -44,7 +39,6 @@ void senderSocketInit() {
     }
 
     // Creating sender address struct
-    int addrSize = sizeof(senderListenSockAddr);
     memset(&senderListenSockAddr, 0, addrSize);
     senderListenSockAddr.sin_family = AF_INET;
     senderListenSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -76,7 +70,7 @@ void senderSocketInit() {
     }
 }
 
-void recieverSocketInit() {
+void initRecieverSocket() {
     // Creating reciever socket for listening
     recieverListenSockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (recieverListenSockfd < 0) {
@@ -85,7 +79,6 @@ void recieverSocketInit() {
     }
 
     // Creating reciever address struct
-    int addrSize = sizeof(recieverListenSockAddr);
     memset(&recieverListenSockAddr, 0, addrSize);
     recieverListenSockAddr.sin_family = AF_INET;
     recieverListenSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -116,22 +109,51 @@ void recieverSocketInit() {
     }
 }
 
-int main(int argc, char* argv[]) {
-    // Parsing arguments and call method functions
-    noiseMethod = argv[1];
-    if (strcmp(noiseMethod, "-r") == 0) { // Random noise
-        sscanf_s(argv[2], "%lf", &noiseProbability);
-        noiseProbability /= pow(2, 16);
-        sscanf_s(argv[3], "%du", &randomSeed);
-        isRandomNoise = 1;
-    }
-    else if (strcmp(noiseMethod, "-d") == 0) { // Deterministic noise
-        sscanf_s(argv[2], "%du", &cycleLength);
-    }
-    else {
-        perror("Not a legal noise flag");
+void acceptConnections() {
+    senderConnSockfd = accept(senderListenSockfd, (struct sockaddr*)&senderConnSockAddr, &addrSize);
+    if (senderConnSockfd < 0) {
+        perror("Accept sender connection failed");
         exit(1);
     }
+
+    // Accepting reciever connection
+    recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrSize);
+    if (recieverConnSockfd < 0) {
+        perror("Accept reciever connection failed");
+        exit(1);
+    }
+}
+
+void readOriginalDataFromSocket() {
+}
+
+void addRandomNoise() {
+    memset(&dataBuffer, 0, 26); // TODO change number
+    srand(randomSeed);
+    for (int i = 0; i < sizeof(dataBuffer); i++) {
+        double randomDouble = (double)rand() / (double)RAND_MAX;
+        int toFlip = randomDouble < noiseProbability;
+        if (toFlip > 0) {
+            dataBuffer[i] = 1 - dataBuffer[i];
+            numberOfFlippedBits++;
+        }
+    }
+}
+
+void addDeterministicNoise() {
+    memset(&dataBuffer, 0, 26); // TODO change number
+    for (int i = cycleLength - 1; i < sizeof(dataBuffer); i += cycleLength) {
+        dataBuffer[i] = 1 - dataBuffer[i];
+        numberOfFlippedBits++;
+    }
+}
+
+void writePerturbedDataToSocket() {
+}
+
+int main(int argc, char* argv[]) {
+    // Parsing arguments according to selected noise method
+    parseArguments(argv);
 
     // Initializing Winsock
     retVal = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -141,35 +163,22 @@ int main(int argc, char* argv[]) {
     }
 
     // Initilizing listen sockets
-    senderSocketInit();
-    recieverSocketInit();
-        
-    // Accepting sender connection
-    int addrLen = sizeof(senderConnSockAddr);
-    senderConnSockfd = accept(senderListenSockfd, (struct sockaddr*)&senderConnSockAddr, &addrLen);
-    if (senderConnSockfd < 0) {
-        perror("Accept sender connection failed");
-        exit(1);
-    }
+    initSenderSocket();
+    initRecieverSocket();
 
-    // Accepting reciever connection
-    addrLen = sizeof(recieverConnSockAddr);
-    recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrLen);
-    if (recieverConnSockfd < 0) {
-        perror("Accept reciever connection failed");
-        exit(1);
-    }
+    // Accepting sender and reciever Connections
+    acceptConnections();
 
-    //////////////
+    // Reading data from socket and adding noise
     while (1) { // TODO while sender is not closed
-        // TODO read data from socket to buffer
+        readOriginalDataFromSocket();
         if (isRandomNoise == 1) {
             addRandomNoise();
         }
         else {
             addDeterministicNoise();
         }
-        // TODO writing perturbed data to reciever connection socket
+        writePerturbedDataToSocket();
     }
     // TODO add continue
 
@@ -179,6 +188,5 @@ int main(int argc, char* argv[]) {
         perror("Error at WSACleanup");
         exit(1);
     }
-
     exit(0);
 }
