@@ -7,7 +7,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsFileBuffer, * rawBytesFileBuffer;
+char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsFileBuffer, * bytesFileBuffer;
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
@@ -55,8 +55,8 @@ void createBuffers() {
     }
 
     // Creating buffer for file content -  TODO decide size because 26 bits are not full bytes
-    rawBytesFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
-    if (rawBytesFileBuffer == NULL) {
+    bytesFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
+    if (bytesFileBuffer == NULL) {
         perror("Can't allocate memory for buffer");
         exit(1);
     }
@@ -105,15 +105,28 @@ void hummingDecode() {
         errorIndex += (power * VerifyCheckbit(power));
     }
     if (errorIndex != 0) {
-        encodedBitsFileBuffer[errorIndex] = 1 - encodedBitsFileBuffer[errorIndex];
+        char currentBit = encodedBitsFileBuffer[errorIndex];
+        if (currentBit == '1') {
+            encodedBitsFileBuffer[errorIndex] = '0';
+        }
+        else {
+            encodedBitsFileBuffer[errorIndex] = '1';
+        }
         bitsCorrectedTotal++;
     }
     copyToDecodedBuffer();
 }
 
+void translateBlockFromCharBitsToBytes() {
+    for (int i = 0; i < originalBlockLength; i+=8) {
+        bytesFileBuffer[i] = (int)(strtol(decodedBitsFileBuffer[8*i], 0, 2));
+    }
+}
+
 void writeBlockToFile() {
+    translateBlockFromCharBitsToBytes();
     // Writing decoded block to file
-    bytesWritten = fwrite(encodedBitsFileBuffer, 1, originalBlockLength, filePointer);
+    bytesWritten = fwrite(bytesFileBuffer, 1, originalBlockLength, filePointer);
     if (bytesWritten != originalBlockLength) { // There was an error
         perror("Couldn't read block from file");
         exit(1);

@@ -1,3 +1,5 @@
 ﻿  Reciever.c
 C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Reciever\Reciever\Reciever.c(104,30): warning C4013: 'pow' undefined; assuming extern returning int
+C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Reciever\Reciever\Reciever.c(122,69): warning C4047: 'function': 'const char *' differs in levels of indirection from 'char'
+C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Reciever\Reciever\Reciever.c(122,64): warning C4024: 'strtol': different types for formal and actual parameter 1
   Reciever.vcxproj -> C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Reciever\Debug\Reciever.exe
