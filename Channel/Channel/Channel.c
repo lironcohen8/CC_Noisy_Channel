@@ -129,6 +129,13 @@ void readOriginalDataFromSocket() {
     // TODO
 }
 
+char flipBit(char bit) {
+    if (bit == '0')
+        return '1';
+    else
+        return '0';
+}
+
 void addRandomNoise() {
     memset(&dataBuffer, 0, 26); // TODO change number
     srand(randomSeed);
@@ -136,7 +143,7 @@ void addRandomNoise() {
         double randomDouble = (double)rand() / (double)RAND_MAX;
         int toFlip = randomDouble < noiseProbability;
         if (toFlip > 0) {
-            dataBuffer[i] = 1 - dataBuffer[i];
+            dataBuffer[i] = flipBit(dataBuffer[i]);
             numberOfFlippedBits++;
         }
     }
@@ -145,7 +152,7 @@ void addRandomNoise() {
 void addDeterministicNoise() {
     memset(&dataBuffer, 0, 26); // TODO change number
     for (int i = cycleLength - 1; i < sizeof(dataBuffer); i += cycleLength) {
-        dataBuffer[i] = 1 - dataBuffer[i];
+        dataBuffer[i] = flipBit(dataBuffer[i]);
         numberOfFlippedBits++;
     }
 }

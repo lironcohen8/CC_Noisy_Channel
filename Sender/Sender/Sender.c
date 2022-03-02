@@ -74,7 +74,7 @@ void readSectionFromBuffer() {
     bytesReadTotal += bytesRead;
 }
 
-void translateSectionFromBytesToBits() {
+void translateSectionFromBytesToCharBits() {
     for (int i = 0; i < originalBlockLength; i++) {
         _itoa_s(rawBytesFileBuffer[i], &(originalBitsFileBuffer[8 * i]), 8, 2);
     }    
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
         // Reading file content to buffer
         while (feof(filePointer) == 0) {
             readSectionFromBuffer();
-            translateSectionFromBytesToBits();
+            translateSectionFromBytesToCharBits();
             for (int i = 0; i < extendedBufferLength; i+= originalBlockLength) {
                 hummingEncode(i);
                 writeBlockToSocket();

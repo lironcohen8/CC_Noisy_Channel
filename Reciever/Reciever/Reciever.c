@@ -98,6 +98,13 @@ void copyToDecodedBuffer() {
     }
 }
 
+char flipBit(char bit) {
+    if (bit == '0')
+        return '1';
+    else
+        return '0';
+}
+
 void hummingDecode() {
     int errorIndex = 0;
     for (int i = 1; i < 5; i++) {
@@ -105,13 +112,7 @@ void hummingDecode() {
         errorIndex += (power * VerifyCheckbit(power));
     }
     if (errorIndex != 0) {
-        char currentBit = encodedBitsFileBuffer[errorIndex];
-        if (currentBit == '1') {
-            encodedBitsFileBuffer[errorIndex] = '0';
-        }
-        else {
-            encodedBitsFileBuffer[errorIndex] = '1';
-        }
+        encodedBitsFileBuffer[errorIndex] = flipBit(encodedBitsFileBuffer[errorIndex]);
         bitsCorrectedTotal++;
     }
     copyToDecodedBuffer();
