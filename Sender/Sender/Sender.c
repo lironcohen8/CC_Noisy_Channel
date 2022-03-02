@@ -1,39 +1,97 @@
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#define originalBlockLength 26
+#define encodedBlockLength 31
+#define extendedBufferLength 208 // 26 bytes * 8 bits per bytes
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* fileName, * channelSenderIPString, * originalFileBuffer, * encodedFileBuffer;
+char* fileName, * channelSenderIPString, * rawFileBuffer, * originalBitsFileBuffer, * encodedBitsFileBuffer;
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, fileLength = 0, bytesRead = 0, bytesWritten = 0, bytesCurrWrite = 0;
+int sockfd, retVal, fileLength = 0, bytesRead = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
 
-void read26BitsFromFile() {
-    // Reading block from file
-    bytesRead = fread(originalFileBuffer, 1, 26, filePointer);
-    if (bytesRead != 26) { // There was an error
+void creatingBuffers() {
+    // Creating buffer for raw file - 26 bytes
+    rawFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
+    if (rawFileBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
+
+    // Creating buffer for original bits - 26*8 bytes
+    originalBitsFileBuffer = (char*)calloc(extendedBufferLength, sizeof(char));
+    if (originalBitsFileBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
+
+    // Creating buffer for encoded bits - 31 bytes
+    encodedBitsFileBuffer = (char*)calloc(encodedBlockLength, sizeof(char));
+    if (encodedBitsFileBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
+}
+
+void readSectionFromBuffer() {
+    // Reading 26 bytes from file
+    bytesRead = fread(rawFileBuffer, 1, originalBlockLength, filePointer);
+    if (bytesRead != originalBlockLength) { // There was an error
         perror("Couldn't read block from file");
         exit(1);
     }
 }
 
-void hummingEncode() { // TODO add later
+void translateSectionFromRawToBits() {
+    for (int i = 0; i < originalBlockLength; i++) {
+        _itoa_s(rawFileBuffer[i], &(originalBitsFileBuffer[8 * i]), 8, 2);
+    }    
 }
 
-void write31BitsToSocket() {
-    // Writing encoded block to channel socket
-    bytesWritten = 0;
-    bytesCurrWrite = 1;
-    while (bytesWritten < 31) {
-        bytesCurrWrite = send(sockfd, *((&encodedFileBuffer) + bytesWritten), 31 - bytesWritten, 0);
-        bytesWritten += bytesCurrWrite;
+void copyToEncodedBuffer(int startIndexInSection) {
+    int originalIndex = startIndexInSection;
+    for (int encodedIndex = 2; encodedIndex < encodedBlockLength; encodedIndex++) {
+        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
+            encodedBitsFileBuffer[encodedIndex] = originalBitsFileBuffer[originalIndex];
+            originalIndex++;
+        }
     }
-    if (bytesCurrWrite < 0 || bytesWritten != 31) { // There was an error TODO change
+}
+
+void generateParityBit(int number) {
+    int result = 0;
+    for (int i = number - 1; i < encodedBlockLength; i += (2*number)) {
+        for (int j = 0; j < number; j++) {
+            result ^= encodedBitsFileBuffer[i + j];
+        }
+    }
+    encodedBitsFileBuffer[number - 1] = result;
+}
+
+void hummingEncode() {
+    for (int i = 1; i < 5; i++) {
+        generateParityBit((int)(pow(2, i)));
+    }
+}
+
+void writeBlockToSocket() {
+    // Writing encoded block to channel socket
+    bitsWritten = 0;
+    bitsCurrWrite = 1;
+    while (bitsWritten < encodedBlockLength) {
+        bitsCurrWrite = send(sockfd, *((&encodedBitsFileBuffer) + bitsWritten), encodedBlockLength - bitsWritten, 0);
+        bitsWritten += bitsCurrWrite;
+    }
+    if (bitsCurrWrite < 0 || bitsWritten != encodedBlockLength) { // There was an error TODO change
         perror("Couldn't write encoded block to socket");
         exit(1);
     }
+    bitsWrittenTotal += bitsWritten;
 }
 
 int main(int argc, char* argv[]) {
@@ -90,26 +148,17 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
 
-        // Creating buffer for file content TODO understand how to calloc 26 bits
-        originalFileBuffer = (char*)calloc(26, sizeof(char));
-        if (originalFileBuffer == NULL) {
-            perror("Can't allocate memory for buffer");
-            exit(1);
-        }
-
-        // Creating buffer for encoded file content TODO understand how to calloc 31 bits
-        encodedFileBuffer = (char*)calloc(31, sizeof(char));
-        if (encodedFileBuffer == NULL) {
-            perror("Can't allocate memory for buffer");
-            exit(1);
-        }
+        // Creating three buffers
+        creatingBuffers();
 
         // Reading file content to buffer
-        // TODO add counter
         while (feof(filePointer) == 0) {
-            read26BitsFromFile();
-            hummingEncode();
-            write31BitsToSocket();
+            readSectionFromBuffer();
+            translateSectionFromRawToBits();
+            for (int i = 0; i < extendedBufferLength; i+= originalBlockLength) {
+                hummingEncode(i);
+                writeBlockToSocket();
+            }
         }
 
         // Closing socket
@@ -118,8 +167,9 @@ int main(int argc, char* argv[]) {
         // Closing file
         fclose(filePointer);
 
+        // Printing messages
         printf("file length: %d bytes\n", fileLength);
-        printf("sent: %d bytes\n", bytesWritten);
+        printf("sent: %d bytes\n", bitsWrittenTotal / 8);
     }
 
     // Cleaning up Winsock

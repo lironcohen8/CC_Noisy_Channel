@@ -4,7 +4,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* fileName, * channelSenderIPString, * socketBuffer, * decodedFileBuffer;
+char* fileName, * channelSenderIPString, * encodedFileBuffer, * decodedFileBuffer;
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
@@ -24,12 +24,43 @@ void read31BitsFromSocket() {
     }
 }
 
-void hummingDecode() { // TODO add later
+void copyToDecodedBuffer() {
+    int originalIndex = 0;
+    for (int encodedIndex = 2; encodedIndex < 32; encodedIndex++) {
+        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
+            decodedFileBuffer[originalIndex] = encodedFileBuffer[encodedIndex];
+            originalIndex++;
+        }
+    }
+}
+
+int VerifyCheckbit(int number) {
+    int result = 0;
+    for (int i = number - 1; i < 32; i += (2 * number)) {
+        for (int j = 0; j < number; j++) {
+            result ^= encodedFileBuffer[i + j];
+        }
+    }
+    result ^= encodedFileBuffer[number - 1];
+    return result;
+}
+
+void hummingDecode() {
+    int errorIndex = 0;
+    for (int i = 1; i < 5; i++) {
+        int power = (int)(pow(2, i));
+        errorIndex += (power * VerifyCheckbit(power));
+    }
+    if (errorIndex != 0) {
+        encodedFileBuffer[errorIndex] = 1 - encodedFileBuffer[errorIndex];
+        bitsFixed++;
+    }
+    copyToDecodedBuffer();
 }
 
 void write26BitsToFile() {
     // Writing decoded block to file
-    bytesWritten = fwrite(socketBuffer, 1, 26, filePointer);
+    bytesWritten = fwrite(encodedFileBuffer, 1, 26, filePointer);
     if (bytesWritten != 26) { // There was an error
         perror("Couldn't read block from file");
         exit(1);
@@ -91,8 +122,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Creating buffer for noise channel content TODO should it be 31 bits?
-        socketBuffer = (char*)calloc(31, sizeof(char));
-        if (socketBuffer == NULL) {
+        encodedFileBuffer = (char*)calloc(31, sizeof(char));
+        if (encodedFileBuffer == NULL) {
             perror("Can't allocate memory for buffer");
             exit(1);
         }
