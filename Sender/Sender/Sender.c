@@ -15,7 +15,33 @@ short channelSenderPort;
 struct sockaddr_in channelAddr;
 int sockfd, retVal, fileLength = 0, bytesRead = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
 
-void creatingBuffers() {
+void connectToSocket() {
+    // Creating socket 
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("Can't create socket");
+        exit(1);
+    }
+
+    // Creating channel address struct
+    channelAddr.sin_family = AF_INET;
+    inet_pton(AF_INET, (PCSTR)channelSenderIPString, &(channelAddr.sin_addr.s_addr));
+    /*channelAddr.sin_addr.s_addr = inet_addr(channelSenderIPString);
+    if (channelAddr.sin_addr.s_addr == INADDR_NONE) {
+        perror("Can't convert channel IP string to long");
+        exit(1);
+    }*/
+    channelAddr.sin_port = htons(channelSenderPort);
+
+    // Connecting to server
+    retVal = connect(sockfd, (struct sockaddr*)&channelAddr, sizeof(channelAddr));
+    if (retVal < 0) {
+        perror("Can't connect to channel server");
+        exit(1);
+    }
+}
+
+void createBuffers() {
     // Creating buffer for raw file - 26 bytes
     rawFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
     if (rawFileBuffer == NULL) {
@@ -87,7 +113,7 @@ void writeBlockToSocket() {
         bitsCurrWrite = send(sockfd, *((&encodedBitsFileBuffer) + bitsWritten), encodedBlockLength - bitsWritten, 0);
         bitsWritten += bitsCurrWrite;
     }
-    if (bitsCurrWrite < 0 || bitsWritten != encodedBlockLength) { // There was an error TODO change
+    if (bitsCurrWrite < 0 || bitsWritten != encodedBlockLength) { // There was an error
         perror("Couldn't write encoded block to socket");
         exit(1);
     }
@@ -112,29 +138,8 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    // Creating socket 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        perror("Can't create socket");
-        exit(1);
-    }
-
-    // Creating channel address struct
-    channelAddr.sin_family = AF_INET;
-    inet_pton(AF_INET, (PCSTR)channelSenderIPString, &(channelAddr.sin_addr.s_addr));
-    /*channelAddr.sin_addr.s_addr = inet_addr(channelSenderIPString);
-    if (channelAddr.sin_addr.s_addr == INADDR_NONE) {
-        perror("Can't convert channel IP string to long");
-        exit(1);
-    }*/
-    channelAddr.sin_port = htons(channelSenderPort);
-
-    // Connecting to server
-    retVal = connect(sockfd, (struct sockaddr*)&channelAddr, sizeof(channelAddr));
-    if (retVal < 0) {
-        perror("Can't connect to channel server");
-        exit(1);
-    }
+    // Creating socket and connecting to it
+    connectToSocket();
 
     // Ask user to enter file name
     printf("enter file name:\n");
@@ -149,7 +154,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Creating three buffers
-        creatingBuffers();
+        createBuffers();
 
         // Reading file content to buffer
         while (feof(filePointer) == 0) {
@@ -161,10 +166,8 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // Closing socket
+        // Closing socket and files
         closesocket(sockfd);
-
-        // Closing file
         fclose(filePointer);
 
         // Printing messages
