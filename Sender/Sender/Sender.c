@@ -9,7 +9,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* fileName, * channelSenderIPString, * rawFileBuffer, * originalBitsFileBuffer, * encodedBitsFileBuffer;
+char* fileName, * channelSenderIPString, * rawBytesFileBuffer, * originalBitsFileBuffer, * encodedBitsFileBuffer;
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
@@ -43,20 +43,20 @@ void connectToSocket() {
 
 void createBuffers() {
     // Creating buffer for raw file - 26 bytes
-    rawFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
-    if (rawFileBuffer == NULL) {
+    rawBytesFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
+    if (rawBytesFileBuffer == NULL) {
         perror("Can't allocate memory for buffer");
         exit(1);
     }
 
-    // Creating buffer for original bits - 26*8 bytes
+    // Creating buffer for original bits - 26*8 bytes (208 bit chars)
     originalBitsFileBuffer = (char*)calloc(extendedBufferLength, sizeof(char));
     if (originalBitsFileBuffer == NULL) {
         perror("Can't allocate memory for buffer");
         exit(1);
     }
 
-    // Creating buffer for encoded bits - 31 bytes
+    // Creating buffer for encoded bits - 31 bytes (bit chars)
     encodedBitsFileBuffer = (char*)calloc(encodedBlockLength, sizeof(char));
     if (encodedBitsFileBuffer == NULL) {
         perror("Can't allocate memory for buffer");
@@ -66,7 +66,7 @@ void createBuffers() {
 
 void readSectionFromBuffer() {
     // Reading 26 bytes from file
-    bytesRead = fread(rawFileBuffer, 1, originalBlockLength, filePointer);
+    bytesRead = fread(rawBytesFileBuffer, 1, originalBlockLength, filePointer);
     if (bytesRead != originalBlockLength) { // There was an error
         perror("Couldn't read block from file");
         exit(1);
@@ -75,7 +75,7 @@ void readSectionFromBuffer() {
 
 void translateSectionFromRawToBits() {
     for (int i = 0; i < originalBlockLength; i++) {
-        _itoa_s(rawFileBuffer[i], &(originalBitsFileBuffer[8 * i]), 8, 2);
+        _itoa_s(rawBytesFileBuffer[i], &(originalBitsFileBuffer[8 * i]), 8, 2);
     }    
 }
 
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
 
-        // Creating three buffers
+        // Creating buffers
         createBuffers();
 
         // Reading file content to buffer
