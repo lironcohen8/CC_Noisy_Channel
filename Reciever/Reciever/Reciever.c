@@ -11,7 +11,7 @@ char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsF
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 0, bitsCorrected = 0, bitsReadTotal = 0;
+int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 0, bitsReadTotal = 0, bitsCorrectedTotal = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -77,16 +77,6 @@ void readBlockFromSocket() {
     bitsReadTotal += bitsRead;
 }
 
-void copyToDecodedBuffer() {
-    int originalIndex = 0;
-    for (int encodedIndex = 2; encodedIndex < 32; encodedIndex++) {
-        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
-            decodedBitsFileBuffer[originalIndex] = encodedBitsFileBuffer[encodedIndex];
-            originalIndex++;
-        }
-    }
-}
-
 int VerifyCheckbit(int number) {
     int result = 0;
     for (int i = number - 1; i < 32; i += (2 * number)) {
@@ -98,6 +88,16 @@ int VerifyCheckbit(int number) {
     return result;
 }
 
+void copyToDecodedBuffer() {
+    int originalIndex = 0;
+    for (int encodedIndex = 2; encodedIndex < 32; encodedIndex++) {
+        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
+            decodedBitsFileBuffer[originalIndex] = encodedBitsFileBuffer[encodedIndex];
+            originalIndex++;
+        }
+    }
+}
+
 void hummingDecode() {
     int errorIndex = 0;
     for (int i = 1; i < 5; i++) {
@@ -106,7 +106,7 @@ void hummingDecode() {
     }
     if (errorIndex != 0) {
         encodedBitsFileBuffer[errorIndex] = 1 - encodedBitsFileBuffer[errorIndex];
-        bitsCorrected++;
+        bitsCorrectedTotal++;
     }
     copyToDecodedBuffer();
 }
@@ -158,7 +158,6 @@ int main(int argc, char* argv[]) {
         createBuffers();
 
         // Reading file content to buffer
-        // TODO add counter
         while (feof(filePointer) == 0) {
             readBlockFromSocket();
             hummingDecode();
@@ -171,8 +170,8 @@ int main(int argc, char* argv[]) {
 
         // Printing messages
         printf("received: %d bytes\n", bitsReadTotal / 8);
-        printf("wrote: %d bytes\n", bytesWritten);
-        printf("corrected %d errors\n", bitsCorrected);
+        printf("wrote: %d bytes\n", bytesWrittenTotal);
+        printf("corrected %d errors\n", bitsCorrectedTotal);
     }
 
     // Cleaning up Winsock
