@@ -11,7 +11,7 @@ char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsF
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, fileLength = 0, bytesWritten = 0, bytesRead = 0, bytesCurrRead = 0, bitsFixed = 0;
+int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 0, bitsCorrected = 0, bitsReadTotal = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -64,16 +64,17 @@ void createBuffers() {
 
 void readBlockFromSocket() {
     // Reading block from socket
-    bytesRead = 0;
-    bytesCurrRead = 1;
-    while (bytesRead < 31) {
-        bytesCurrRead = recv(sockfd, *((&decodedBitsFileBuffer) + bytesRead), 31 - bytesRead, 0);
-        bytesRead += bytesCurrRead;
+    bitsRead = 0;
+    bitsCurrRead = 1;
+    while (bitsRead < encodedBlockLength) {
+        bitsCurrRead = recv(sockfd, *((&decodedBitsFileBuffer) + bitsRead), encodedBlockLength - bitsRead, 0);
+        bitsRead += bitsCurrRead;
     }
-    if (bytesCurrRead < 0 || bytesRead != 31) { // There was an error TODO change
+    if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
         perror("Couldn't read encoded block from socket");
         exit(1);
     }
+    bitsReadTotal += bitsRead;
 }
 
 void copyToDecodedBuffer() {
@@ -105,18 +106,19 @@ void hummingDecode() {
     }
     if (errorIndex != 0) {
         encodedBitsFileBuffer[errorIndex] = 1 - encodedBitsFileBuffer[errorIndex];
-        bitsFixed++;
+        bitsCorrected++;
     }
     copyToDecodedBuffer();
 }
 
 void writeBlockToFile() {
     // Writing decoded block to file
-    bytesWritten = fwrite(encodedBitsFileBuffer, 1, 26, filePointer);
-    if (bytesWritten != 26) { // There was an error
+    bytesWritten = fwrite(encodedBitsFileBuffer, 1, originalBlockLength, filePointer);
+    if (bytesWritten != originalBlockLength) { // There was an error
         perror("Couldn't read block from file");
         exit(1);
     }
+    bytesWrittenTotal += bytesWritten;
 }
 
 int main(int argc, char* argv[]) {
@@ -168,17 +170,17 @@ int main(int argc, char* argv[]) {
         fclose(filePointer);
 
         // Printing messages
-        printf("received: %d bytes\n", bytesRead);
+        printf("received: %d bytes\n", bitsReadTotal / 8);
         printf("wrote: %d bytes\n", bytesWritten);
-        printf("corrected %d errors\n", bitsFixed);
+        printf("corrected %d errors\n", bitsCorrected);
     }
 
-        // Cleaning up Winsock
-        retVal = WSACleanup();
-        if (retVal != NO_ERROR) {
-            perror("Error at WSACleanup");
-            exit(1);
-        }
+    // Cleaning up Winsock
+    retVal = WSACleanup();
+    if (retVal != NO_ERROR) {
+        perror("Error at WSACleanup");
+        exit(1);
+    }
 
-        exit(0);
+    exit(0);
 }

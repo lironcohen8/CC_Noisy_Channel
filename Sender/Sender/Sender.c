@@ -13,7 +13,7 @@ char* fileName, * channelSenderIPString, * rawBytesFileBuffer, * originalBitsFil
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, fileLength = 0, bytesRead = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
+int sockfd, retVal, bytesRead = 0, bytesReadTotal = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -71,6 +71,7 @@ void readSectionFromBuffer() {
         perror("Couldn't read block from file");
         exit(1);
     }
+    bytesReadTotal += bytesRead;
 }
 
 void translateSectionFromRawToBits() {
@@ -171,7 +172,7 @@ int main(int argc, char* argv[]) {
         fclose(filePointer);
 
         // Printing messages
-        printf("file length: %d bytes\n", fileLength);
+        printf("file length: %d bytes\n", bytesReadTotal);
         printf("sent: %d bytes\n", bitsWrittenTotal / 8);
     }
 

@@ -1,3 +1,3 @@
 ﻿  Reciever.c
-C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Reciever\Reciever\Reciever.c(51,30): warning C4013: 'pow' undefined; assuming extern returning int
+C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Reciever\Reciever\Reciever.c(103,30): warning C4013: 'pow' undefined; assuming extern returning int
   Reciever.vcxproj -> C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Reciever\Debug\Reciever.exe
