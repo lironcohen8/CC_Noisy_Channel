@@ -227,7 +227,7 @@ int main(int argc, char* argv[]) {
         }
         writeNoisedDataToSocket();
     }
-    // TODO add continue and close sockets
+    // TODO close sockets and add continue
 
     // Printing message
     printf("retransmitted %d bytes, flipped %d bits\n", bitsWrittenTotal / 8, numberOfFlippedBits);
