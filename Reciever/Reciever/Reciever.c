@@ -7,7 +7,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsFileBuffer, * bytesFileBuffer;
+char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsFileBuffer, * sectionFileBuffer , * bytesFileBuffer;
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
@@ -54,7 +54,14 @@ void createBuffers() {
         exit(1);
     }
 
-    // Creating buffer for file content -  TODO decide size because 26 bits are not full bytes
+    // Creating buffer for section file content -  26 bytes * 8 bits per bytes (26 char bytes)
+    sectionFileBuffer = (char*)calloc(extendedBufferLength, sizeof(char));
+    if (sectionFileBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
+
+    // Creating buffer for file content -  26 bytes
     bytesFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
     if (bytesFileBuffer == NULL) {
         perror("Can't allocate memory for buffer");
@@ -118,17 +125,22 @@ void hummingDecode() {
     copyToDecodedBuffer();
 }
 
-void translateBlockFromCharBitsToBytes() {
-    for (int i = 0; i < originalBlockLength; i+=8) {
-        bytesFileBuffer[i] = (int)(strtol(decodedBitsFileBuffer[8*i], 0, 2));
+void writeBlockToSectionBuffer(int startIndexInSection) {
+    for (int i = startIndexInSection; i < originalBlockLength; i++) {
+        sectionFileBuffer[i] = decodedBitsFileBuffer[i % originalBlockLength];
     }
 }
 
-void writeBlockToFile() {
-    translateBlockFromCharBitsToBytes();
+void translateSectionFromCharBitsToBytes() {
+    for (int i = 0; i < extendedBufferLength; i+=8) {
+        bytesFileBuffer[i] = (int)(strtol(sectionFileBuffer[8*i], 0, 2));
+    }
+}
+
+void writeSectionToFile() {
     // Writing decoded block to file
-    bytesWritten = fwrite(bytesFileBuffer, 1, originalBlockLength, filePointer);
-    if (bytesWritten != originalBlockLength) { // There was an error
+    bytesWritten = fwrite(bytesFileBuffer, 1, extendedBufferLength, filePointer);
+    if (bytesWritten != extendedBufferLength) { // There was an error
         perror("Couldn't read block from file");
         exit(1);
     }
@@ -162,7 +174,7 @@ int main(int argc, char* argv[]) {
 
     while (strcmp(fileName, "quit") != 0) {
         // Opening file
-        fopen_s(&filePointer, fileName, "r");
+        fopen_s(&filePointer, fileName, "w");
         if (filePointer == NULL) {
             perror("Can't open file");
             exit(1);
@@ -171,11 +183,15 @@ int main(int argc, char* argv[]) {
         // Creating buffers
         createBuffers();
 
-        // Reading file content to buffer
+        // Reading file content from socket - TODO change to socket closed
         while (feof(filePointer) == 0) {
-            readBlockFromSocket();
-            hummingDecode();
-            writeBlockToFile();
+            for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
+                readBlockFromSocket();
+                hummingDecode();
+                writeBlockToSectionBuffer(i);
+            }
+            translateSectionFromCharBitsToBytes();
+            writeSectionToFile();
         }
 
         // Closing socket and file
