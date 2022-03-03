@@ -2,13 +2,17 @@
 #include <math.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#define originalBlockLength 26
+#define encodedBlockLength 31
+#define extendedBufferLength 208 // 26 bytes * 8 bits per bytes
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
 char* noiseMethod, * dataBuffer, * IPAddress;
 struct sockaddr_in senderListenSockAddr, recieverListenSockAddr, senderConnSockAddr, recieverConnSockAddr;
 int senderListenSockfd, recieverListenSockfd, senderConnSockfd, recieverConnSockfd;
-int retVal = 0, randomSeed = 0, cycleLength = 0, fileLength = 0, bytesRead = 0, bytesCurrRead = 0, bytesWritten = 0, bytesCurrWrite = 0;
+int retVal = 0, randomSeed = 0, cycleLength = 0;
+int bitsRead = 0, bitsCurrRead = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
 int isRandomNoise = 0, numberOfFlippedBits = 0;
 int addrSize = sizeof(struct sockaddr_in);
 double noiseProbability;
@@ -125,8 +129,27 @@ void acceptConnections() {
     }
 }
 
+void createBuffer() {
+    // Creating buffer for data - 31 bytes (bit chars)
+    dataBuffer = (char*)calloc(encodedBlockLength, sizeof(char));
+    if (dataBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
+}
+
 void readOriginalDataFromSocket() {
-    // TODO
+    // Reading block from socket
+    bitsRead = 0;
+    bitsCurrRead = 1;
+    while (bitsRead < encodedBlockLength) {
+        bitsCurrRead = recv(senderConnSockfd, *((&dataBuffer) + bitsRead), encodedBlockLength - bitsRead, 0);
+        bitsRead += bitsCurrRead;
+    }
+    if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
+        perror("Couldn't read encoded block from socket");
+        exit(1);
+    }
 }
 
 char flipBit(char bit) {
@@ -137,9 +160,9 @@ char flipBit(char bit) {
 }
 
 void addRandomNoise() {
-    memset(&dataBuffer, 0, 26); // TODO change number
+    memset(&dataBuffer, 0, encodedBlockLength);
     srand(randomSeed);
-    for (int i = 0; i < sizeof(dataBuffer); i++) {
+    for (int i = 0; i < encodedBlockLength; i++) {
         double randomDouble = (double)rand() / (double)RAND_MAX;
         int toFlip = randomDouble < noiseProbability;
         if (toFlip > 0) {
@@ -150,15 +173,26 @@ void addRandomNoise() {
 }
 
 void addDeterministicNoise() {
-    memset(&dataBuffer, 0, 26); // TODO change number
-    for (int i = cycleLength - 1; i < sizeof(dataBuffer); i += cycleLength) {
+    memset(&dataBuffer, 0, encodedBlockLength);
+    for (int i = cycleLength - 1; i < encodedBlockLength; i += cycleLength) {
         dataBuffer[i] = flipBit(dataBuffer[i]);
         numberOfFlippedBits++;
     }
 }
 
-void writePerturbedDataToSocket() {
-    // TODO
+void writeNoisedDataToSocket() {
+    // Writing encoded block to channel socket
+    bitsWritten = 0;
+    bitsCurrWrite = 1;
+    while (bitsWritten < encodedBlockLength) {
+        bitsCurrWrite = send(recieverConnSockfd, *((&dataBuffer) + bitsWritten), encodedBlockLength - bitsWritten, 0);
+        bitsWritten += bitsCurrWrite;
+    }
+    if (bitsCurrWrite < 0 || bitsWritten != encodedBlockLength) { // There was an error
+        perror("Couldn't write noised block to socket");
+        exit(1);
+    }
+    bitsWrittenTotal += bitsWritten;
 }
 
 int main(int argc, char* argv[]) {
@@ -179,6 +213,9 @@ int main(int argc, char* argv[]) {
     // Accepting sender and reciever Connections
     acceptConnections();
 
+    // Creating buffer for data
+    createBuffer();
+
     // Reading data from socket and adding noise
     while (1) { // TODO while sender is not closed
         readOriginalDataFromSocket();
@@ -188,9 +225,12 @@ int main(int argc, char* argv[]) {
         else {
             addDeterministicNoise();
         }
-        writePerturbedDataToSocket();
+        writeNoisedDataToSocket();
     }
-    // TODO add continue
+    // TODO add continue and close sockets
+
+    // Printing message
+    printf("retransmitted %d bytes, flipped %d bits\n", bitsWrittenTotal / 8, numberOfFlippedBits);
 
     // Cleaning up Winsock
     retVal = WSACleanup();

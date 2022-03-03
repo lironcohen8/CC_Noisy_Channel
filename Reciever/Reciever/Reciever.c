@@ -84,7 +84,7 @@ void readBlockFromSocket() {
     bitsReadTotal += bitsRead;
 }
 
-int VerifyCheckbit(int number) {
+int verifyCheckbit(int number) {
     int result = 0;
     for (int i = number - 1; i < 32; i += (2 * number)) {
         for (int j = 0; j < number; j++) {
@@ -116,7 +116,7 @@ void hummingDecode() {
     int errorIndex = 0;
     for (int i = 1; i < 5; i++) {
         int power = (int)(pow(2, i));
-        errorIndex += (power * VerifyCheckbit(power));
+        errorIndex += (power * verifyCheckbit(power));
     }
     if (errorIndex != 0) {
         encodedBitsFileBuffer[errorIndex] = flipBit(encodedBitsFileBuffer[errorIndex]);
