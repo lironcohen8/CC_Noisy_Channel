@@ -13,6 +13,7 @@ FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
 int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 0, bitsReadTotal = 0, bitsCorrectedTotal = 0;
+FD_SET sockfdSet;
 
 void connectToSocket() {
     // Creating socket 
@@ -184,8 +185,10 @@ int main(int argc, char* argv[]) {
         // Creating buffers
         createBuffers();
 
-        // Reading file content from socket - TODO change to socket closed
-        while (eof(sockfd) == 0) {
+        FD_SET(sockfd, &sockfdSet);
+
+        // Reading file content from socket
+        while (select(0, &sockfdSet, NULL, NULL, NULL) > 0) {
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 readBlockFromSocket();
                 hummingDecode();

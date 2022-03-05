@@ -8,7 +8,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* noiseMethod, * dataBuffer, * IPAddress;
+char* noiseMethod, * dataBuffer, * IPAddress, * shouldContinue;
 struct sockaddr_in senderListenSockAddr, recieverListenSockAddr, senderConnSockAddr, recieverConnSockAddr;
 int senderListenSockfd, recieverListenSockfd, senderConnSockfd, recieverConnSockfd;
 int retVal = 0, randomSeed = 0, cycleLength = 0;
@@ -16,6 +16,7 @@ int bitsRead = 0, bitsCurrRead = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrit
 int isRandomNoise = 0, numberOfFlippedBits = 0;
 int addrSize = sizeof(struct sockaddr_in);
 double noiseProbability;
+FD_SET senderfdSet;
 
 void parseArguments(char* argv[]) {
     noiseMethod = argv[1];
@@ -210,27 +211,36 @@ int main(int argc, char* argv[]) {
     initSenderSocket();
     initRecieverSocket();
 
-    // Accepting sender and reciever Connections
-    acceptConnections();
+    do {
+        // Accepting sender and reciever Connections
+        acceptConnections();
 
-    // Creating buffer for data
-    createBuffer();
+        // Creating buffer for data
+        createBuffer();
 
-    // Reading data from socket and adding noise
-    while (1) { // TODO while sender is not closed
-        readOriginalDataFromSocket();
-        if (isRandomNoise == 1) {
-            addRandomNoise();
+        FD_SET(senderConnSockfd, &senderfdSet);
+
+        // Reading data from socket and adding noise
+        while (select(0, &senderfdSet, NULL, NULL, NULL) > 0) {
+            readOriginalDataFromSocket();
+            if (isRandomNoise == 1) {
+                addRandomNoise();
+            }
+            else {
+                addDeterministicNoise();
+            }
+            writeNoisedDataToSocket();
         }
-        else {
-            addDeterministicNoise();
-        }
-        writeNoisedDataToSocket();
-    }
-    // TODO close sockets and add continue
 
-    // Printing message
-    printf("retransmitted %d bytes, flipped %d bits\n", bitsWrittenTotal / 8, numberOfFlippedBits);
+        // closing connections sockets
+        closesocket(senderConnSockfd);
+        closesocket(recieverConnSockfd);
+
+        // Printing message
+        printf("retransmitted %d bytes, flipped %d bits\n", bitsWrittenTotal / 8, numberOfFlippedBits);
+        printf("continue? (yes/no)\n");
+        sscanf_s("%s", shouldContinue);
+    } while (strcmp(shouldContinue, "yes") == 0); // continue as long as the user wants to
 
     // Cleaning up Winsock
     retVal = WSACleanup();
