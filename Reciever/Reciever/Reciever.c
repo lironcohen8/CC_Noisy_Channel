@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "winsock2.h"
 #include "ws2tcpip.h"
 #define originalBlockLength 26
@@ -133,7 +134,7 @@ void writeBlockToSectionBuffer(int startIndexInSection) {
 
 void translateSectionFromCharBitsToBytes() {
     for (int i = 0; i < extendedBufferLength; i+=8) {
-        bytesFileBuffer[i] = (int)(strtol(sectionFileBuffer[8*i], 0, 2));
+        bytesFileBuffer[i] = (int)(strtol(&(sectionFileBuffer[8*i]), 0, 2));
     }
 }
 
@@ -184,7 +185,7 @@ int main(int argc, char* argv[]) {
         createBuffers();
 
         // Reading file content from socket - TODO change to socket closed
-        while (feof(filePointer) == 0) {
+        while (eof(sockfd) == 0) {
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 readBlockFromSocket();
                 hummingDecode();
