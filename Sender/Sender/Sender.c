@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     printf("enter file name:\n");
-    sscanf_s("%s", fileName, sizeof(fileName));
+    scanf_s(fileName, "%s", sizeof(fileName));
 
     while (strcmp(fileName, "quit") != 0) {
         // Opening file
