@@ -12,11 +12,10 @@ char* noiseMethod, * dataBuffer, * IPAddress, * shouldContinue;
 struct sockaddr_in senderListenSockAddr, recieverListenSockAddr, senderConnSockAddr, recieverConnSockAddr;
 int senderListenSockfd, recieverListenSockfd, senderConnSockfd, recieverConnSockfd;
 int retVal = 0, randomSeed = 0, cycleLength = 0;
-int bitsRead = 0, bitsCurrRead = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
+int bitsRead = 0, bitsCurrRead = 1, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
 int isRandomNoise = 0, numberOfFlippedBits = 0;
 int addrSize = sizeof(struct sockaddr_in);
 double noiseProbability;
-FD_SET senderfdSet;
 
 void parseArguments(char* argv[]) {
     noiseMethod = argv[1];
@@ -218,10 +217,8 @@ int main(int argc, char* argv[]) {
         // Creating buffer for data
         createBuffer();
 
-        FD_SET(senderConnSockfd, &senderfdSet);
-
         // Reading data from socket and adding noise
-        while (select(0, &senderfdSet, NULL, NULL, NULL) > 0) {
+        while (bitsCurrRead > 0) {
             readOriginalDataFromSocket();
             if (isRandomNoise == 1) {
                 addRandomNoise();

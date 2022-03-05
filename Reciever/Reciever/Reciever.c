@@ -12,8 +12,7 @@ char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsF
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 0, bitsReadTotal = 0, bitsCorrectedTotal = 0;
-FD_SET sockfdSet;
+int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 1, bitsReadTotal = 0, bitsCorrectedTotal = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -185,10 +184,8 @@ int main(int argc, char* argv[]) {
         // Creating buffers
         createBuffers();
 
-        FD_SET(sockfd, &sockfdSet);
-
         // Reading file content from socket
-        while (select(0, &sockfdSet, NULL, NULL, NULL) > 0) {
+        while (bitsCurrRead > 0) {
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 readBlockFromSocket();
                 hummingDecode();
