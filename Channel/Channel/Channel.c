@@ -45,7 +45,8 @@ void initSenderSocket() {
     // Creating sender address struct
     memset(&senderListenSockAddr, 0, addrSize);
     senderListenSockAddr.sin_family = AF_INET;
-    senderListenSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    // TODO change senderListenSockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    inet_pton(AF_INET, (PCSTR)"127.0.0.1", &(senderListenSockAddr.sin_addr.s_addr));
     senderListenSockAddr.sin_port = htons(0); // Will be changed by bind()
 
     // Binding sender socket to port
@@ -85,7 +86,8 @@ void initRecieverSocket() {
     // Creating reciever address struct
     memset(&recieverListenSockAddr, 0, addrSize);
     recieverListenSockAddr.sin_family = AF_INET;
-    recieverListenSockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    // TODO change recieverListenSockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    inet_pton(AF_INET, (PCSTR)"127.0.0.1", &(recieverListenSockAddr.sin_addr.s_addr));
     recieverListenSockAddr.sin_port = htons(0); // Will be changed by bind()
 
     // Binding reciever socket to port

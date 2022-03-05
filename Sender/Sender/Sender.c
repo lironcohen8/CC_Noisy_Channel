@@ -143,8 +143,13 @@ int main(int argc, char* argv[]) {
     connectToSocket();
 
     // Ask user to enter file name
+    fileName = (char*)calloc(MAX_PATH, sizeof(char));
+    if (fileName == NULL) {
+        perror("Can't allocate memory for file name");
+        exit(1);
+    }
     printf("enter file name:\n");
-    sscanf_s("%s", fileName);
+    sscanf_s("%s", fileName, sizeof(fileName));
 
     while (strcmp(fileName, "quit") != 0) {
         // Opening file
