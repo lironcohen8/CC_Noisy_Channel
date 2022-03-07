@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
 
     while (strcmp(fileName, "quit") != 0) {
         // Opening file
-        fopen_s(&filePointer, fileName, "r");
+        filePointer = fopen(fileName, "r");
         if (filePointer == NULL) {
             perror("Can't open file");
             exit(1);
