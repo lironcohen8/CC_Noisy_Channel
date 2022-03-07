@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -149,7 +150,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     printf("enter file name:\n");
-    scanf_s(fileName, "%s", sizeof(fileName));
+    retVal = scanf("%s", fileName);
 
     while (strcmp(fileName, "quit") != 0) {
         // Opening file
