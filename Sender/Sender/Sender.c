@@ -14,7 +14,7 @@ char* fileName, * channelSenderIPString, * rawBytesFileBuffer, * originalBitsFil
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, bytesRead = 0, bytesReadTotal = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
+int sockfd, retVal, bytesRead = 0, bytesReadTotal = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0, finishedFile = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -68,8 +68,11 @@ void createBuffers() {
 void readSectionFromBuffer() {
     // Reading 26 bytes from file
     bytesRead = fread(rawBytesFileBuffer, 1, originalBlockLength, filePointer);
-    if (bytesRead != originalBlockLength) { // There was an error
-        perror("Couldn't read block from file");
+    if (bytesRead == 0) {
+        finishedFile = 1;
+    }
+    else if (bytesRead != originalBlockLength) { // There was an error
+        perror("Couldn't read section from file");
         exit(1);
     }
     bytesReadTotal += bytesRead;
@@ -164,10 +167,13 @@ int main(int argc, char* argv[]) {
         createBuffers();
 
         // Reading file content to buffer
-        while (feof(filePointer) == 0) {
+        while (1) {
             readSectionFromBuffer();
+            if (finishedFile == 1) {
+                break;
+            }
             translateSectionFromBytesToCharBits();
-            for (int i = 0; i < extendedBufferLength; i+= originalBlockLength) {
+            for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 hummingEncode(i);
                 writeBlockToSocket();
             }
@@ -176,10 +182,13 @@ int main(int argc, char* argv[]) {
         // Closing socket and files
         closesocket(sockfd);
         fclose(filePointer);
+        finishedFile = 0;
 
         // Printing messages
         printf("file length: %d bytes\n", bytesReadTotal);
         printf("sent: %d bytes\n", bitsWrittenTotal / 8);
+        printf("enter file name:\n");
+        retVal = scanf("%s", fileName);
     }
 
     // Cleaning up Winsock
