@@ -1,3 +1,4 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <stdio.h>
 #include <math.h>
 #include <winsock2.h>
@@ -8,8 +9,9 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* noiseMethod, * dataBuffer, * IPAddress, * shouldContinue;
+char* noiseMethod, * dataBuffer, * IPAddress, * shouldContinue, * hostBuffer;
 struct sockaddr_in senderListenSockAddr, recieverListenSockAddr, senderConnSockAddr, recieverConnSockAddr;
+struct hostent* hostEntry;
 int senderListenSockfd, recieverListenSockfd, senderConnSockfd, recieverConnSockfd;
 int retVal = 0, randomSeed = 0, cycleLength = 0;
 int bitsRead = 0, bitsCurrRead = 1, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
@@ -34,6 +36,32 @@ void parseArguments(char* argv[]) {
     }
 }
 
+
+void getIPAddress() {
+    // TODO https://www.geeksforgeeks.org/c-program-display-hostname-ip-address/
+    hostBuffer = (char*)calloc(1024, sizeof(char));
+    if (hostBuffer == NULL) {
+        perror("Allocation for hostname failed");
+        exit(1);
+    }
+    IPAddress = (char*)calloc(1024, sizeof(char));
+    if (IPAddress == NULL) {
+        perror("Allocation for IP failed");
+        exit(1);
+    }
+
+    retVal = gethostname(hostBuffer, 1024);
+    if (retVal != 0) {
+        perror("Get hostname failed");
+        exit(1);
+    }
+
+    hostEntry = gethostbyname(hostBuffer);
+
+    IPAddress = inet_ntoa(*((struct in_addr*)hostEntry->h_addr_list[0]));
+}
+
+
 void initSenderSocket() {
     // Creating sender socket for listening
     senderListenSockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -42,11 +70,12 @@ void initSenderSocket() {
         exit(1);
     }
 
-    // Creating sender address struct
+    // Creating sender address struct and getting IP address
     memset(&senderListenSockAddr, 0, addrSize);
+    getIPAddress();
     senderListenSockAddr.sin_family = AF_INET;
     // TODO change senderListenSockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    inet_pton(AF_INET, (PCSTR)"127.0.0.1", &(senderListenSockAddr.sin_addr.s_addr));
+    inet_pton(AF_INET, (PCSTR)IPAddress, &(senderListenSockAddr.sin_addr.s_addr));
     senderListenSockAddr.sin_port = htons(0); // Will be changed by bind()
 
     // Binding sender socket to port
@@ -64,9 +93,8 @@ void initSenderSocket() {
     }
 
     // Printing IP and port of sender socket
-    memset(&IPAddress, 0, 1024); // TODO change
     if (getsockname(senderListenSockfd, (struct sockaddr*)&senderListenSockAddr, &addrSize) == 0) {
-        inet_ntop(AF_INET, &senderListenSockAddr.sin_addr, IPAddress, 1024); //TODO change number
+        //inet_ntop(AF_INET, &senderListenSockAddr.sin_addr, IPAddress, 1024); //TODO change number
         printf("sender socket: IP address = %s port = %d\n", IPAddress, ntohs(senderListenSockAddr.sin_port));
     }
     else {
@@ -83,11 +111,11 @@ void initRecieverSocket() {
         exit(1);
     }
 
-    // Creating reciever address struct
+    // Creating reciever address struct and getting IP address
     memset(&recieverListenSockAddr, 0, addrSize);
     recieverListenSockAddr.sin_family = AF_INET;
     // TODO change recieverListenSockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    inet_pton(AF_INET, (PCSTR)"127.0.0.1", &(recieverListenSockAddr.sin_addr.s_addr));
+    inet_pton(AF_INET, (PCSTR)IPAddress, &(recieverListenSockAddr.sin_addr.s_addr));
     recieverListenSockAddr.sin_port = htons(0); // Will be changed by bind()
 
     // Binding reciever socket to port
@@ -106,7 +134,7 @@ void initRecieverSocket() {
 
     // Printing IP and port of reciever socket
     if (getsockname(recieverListenSockfd, (struct sockaddr*)&recieverListenSockAddr, &addrSize) == 0) {
-        inet_ntop(AF_INET, &recieverListenSockAddr.sin_addr, IPAddress, 1024); //TODO change
+        //inet_ntop(AF_INET, &recieverListenSockAddr.sin_addr, IPAddress, 1024); //TODO change
         printf("reciever socket: IP address = %s port = %d\n", IPAddress, ntohs(recieverListenSockAddr.sin_port));
     }
     else {
