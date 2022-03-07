@@ -98,7 +98,7 @@ void generateParityBit(int number) {
     int result = 0;
     for (int i = number - 1; i < encodedBlockLength; i += (2*number)) {
         for (int j = 0; j < number; j++) {
-            result ^= encodedBitsFileBuffer[i + j];
+            result ^= (originalBitsFileBuffer[i + j] - '0'); // Converting char to bit
         }
     }
     encodedBitsFileBuffer[number - 1] = result;
@@ -107,6 +107,10 @@ void generateParityBit(int number) {
 void hummingEncode() {
     for (int i = 1; i < 5; i++) {
         generateParityBit((int)(pow(2, i)));
+    }
+     // TODO delete after checking
+    for (int i = 0; i < 31; i++) {
+        printf("%c", encodedBitsFileBuffer[i]);
     }
 }
 
