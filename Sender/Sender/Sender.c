@@ -79,17 +79,11 @@ void readSectionFromBuffer() {
 }
 
 void translateSectionFromBytesToCharBits() {
+    // TODO https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
     for (int i = 0; i < originalBlockLength; i++) {
-        _itoa_s(rawBytesFileBuffer[i], &(originalBitsFileBuffer[8 * i]), 8, 2);
-    }    
-}
-
-void copyToEncodedBuffer(int startIndexInSection) {
-    int originalIndex = startIndexInSection;
-    for (int encodedIndex = 2; encodedIndex < encodedBlockLength; encodedIndex++) {
-        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
-            encodedBitsFileBuffer[encodedIndex] = originalBitsFileBuffer[originalIndex];
-            originalIndex++;
+        for (int j = 0; j < 8; j++) {
+            int bitResult = (rawBytesFileBuffer[i] & (1 << (7 - j))) >> (7 - j);
+            originalBitsFileBuffer[(8 * i) + j] = bitResult == 1 ? '1' : '0';
         }
     }
 }
@@ -101,16 +95,22 @@ void generateParityBit(int number) {
             result ^= (originalBitsFileBuffer[i + j] - '0'); // Converting char to bit
         }
     }
-    encodedBitsFileBuffer[number - 1] = result;
+    encodedBitsFileBuffer[number - 1] = (char)(result + '0');
 }
 
-void hummingEncode() {
-    for (int i = 1; i < 5; i++) {
+void hummingEncodeCheckBits() {
+    for (int i = 0; i < 5; i++) {
         generateParityBit((int)(pow(2, i)));
     }
-     // TODO delete after checking
-    for (int i = 0; i < 31; i++) {
-        printf("%c", encodedBitsFileBuffer[i]);
+}
+
+void copyDataToEncodedBuffer(int startIndexInSection) {
+    int originalIndex = startIndexInSection;
+    for (int encodedIndex = 2; encodedIndex < encodedBlockLength; encodedIndex++) {
+        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
+            encodedBitsFileBuffer[encodedIndex] = originalBitsFileBuffer[originalIndex];
+            originalIndex++;
+        }
     }
 }
 
@@ -178,7 +178,18 @@ int main(int argc, char* argv[]) {
             }
             translateSectionFromBytesToCharBits();
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
-                hummingEncode(i);
+                hummingEncodeCheckBits(i);
+                copyDataToEncodedBuffer(i);
+                // TODO delete after checking
+                for (int i = 0; i < 26; i++) {
+                    printf("%c", originalBitsFileBuffer[i]);
+                }
+                printf("\n");
+                // TODO delete after checking
+                for (int i = 0; i < 31; i++) {
+                    printf("%c", encodedBitsFileBuffer[i]);
+                }
+                printf("\n\n");
                 writeBlockToSocket();
             }
         }
