@@ -89,16 +89,27 @@ void translateSectionFromBytesToCharBits() {
 }
 
 void generateParityBit(int number) {
-    int result = 0;
-    for (int i = number - 1; i < encodedBlockLength; i += (2*number)) {
+    int sum = 0;
+    for (int i = number - 1; i < encodedBlockLength; i += (2 * number)) {
         for (int j = 0; j < number; j++) {
-            result ^= (originalBitsFileBuffer[i + j] - '0'); // Converting char to bit
+            sum += (encodedBitsFileBuffer[i + j]) - '0';
         }
     }
-    encodedBitsFileBuffer[number - 1] = (char)(result + '0');
+    encodedBitsFileBuffer[number - 1] = (sum % 2 == 0) ? '0' : '1';
+    /*int result = 0;
+    for (int i = number - 1; i < encodedBlockLength; i += (2*number)) {
+        for (int j = 0; j < number; j++) {
+            int bitResult = (encodedBitsFileBuffer[i + j]) - '0'; 
+            if (result != bitResult) {
+                printf("generating %d, result changed from ")
+            }
+            result = (result == bitResult) ? 0 : 1;
+        }
+    }
+    encodedBitsFileBuffer[number - 1] = (char)(result + '0');*/
 }
 
-void hummingEncodeCheckBits() {
+void addHummingCheckBits() {
     for (int i = 0; i < 5; i++) {
         generateParityBit((int)(pow(2, i)));
     }
@@ -178,16 +189,16 @@ int main(int argc, char* argv[]) {
             }
             translateSectionFromBytesToCharBits();
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
-                hummingEncodeCheckBits(i);
                 copyDataToEncodedBuffer(i);
+                addHummingCheckBits(i);
                 // TODO delete after checking
-                for (int i = 0; i < 26; i++) {
-                    printf("%c", originalBitsFileBuffer[i]);
+                for (int j = i; j < 26+i; j++) {
+                    printf("%c", originalBitsFileBuffer[j]);
                 }
                 printf("\n");
                 // TODO delete after checking
-                for (int i = 0; i < 31; i++) {
-                    printf("%c", encodedBitsFileBuffer[i]);
+                for (int k = 0; k < 31; k++) {
+                    printf("%c", encodedBitsFileBuffer[k]);
                 }
                 printf("\n\n");
                 writeBlockToSocket();
