@@ -92,7 +92,8 @@ void generateParityBit(int number) {
     int sum = 0;
     for (int i = number - 1; i < encodedBlockLength; i += (2 * number)) {
         for (int j = 0; j < number; j++) {
-            sum += (encodedBitsFileBuffer[i + j]) - '0';
+            int bitResult = (encodedBitsFileBuffer[i + j]) - '0';
+            sum += bitResult;
         }
     }
     encodedBitsFileBuffer[number - 1] = (sum % 2 == 0) ? '0' : '1';
@@ -117,10 +118,13 @@ void addHummingCheckBits() {
 
 void copyDataToEncodedBuffer(int startIndexInSection) {
     int originalIndex = startIndexInSection;
-    for (int encodedIndex = 2; encodedIndex < encodedBlockLength; encodedIndex++) {
-        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
+    for (int encodedIndex = 0; encodedIndex < encodedBlockLength; encodedIndex++) {
+        if (encodedIndex != 0 && encodedIndex != 1 && encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
             encodedBitsFileBuffer[encodedIndex] = originalBitsFileBuffer[originalIndex];
             originalIndex++;
+        }
+        else {
+            encodedBitsFileBuffer[encodedIndex] = '0'; // initialization that doesn't change xor
         }
     }
 }
