@@ -36,7 +36,6 @@ void parseArguments(char* argv[]) {
     }
 }
 
-
 void getIPAddress() {
     // TODO https://www.geeksforgeeks.org/c-program-display-hostname-ip-address/
     hostBuffer = (char*)calloc(1024, sizeof(char));
@@ -60,7 +59,6 @@ void getIPAddress() {
 
     IPAddress = inet_ntoa(*((struct in_addr*)hostEntry->h_addr_list[0]));
 }
-
 
 void initSenderSocket() {
     // Creating sender socket for listening

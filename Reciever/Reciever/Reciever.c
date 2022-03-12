@@ -88,14 +88,17 @@ void readBlockFromSocket() {
 }
 
 int IsCheckBitWrong(int number) {
-    int result = 0;
-    for (int i = number - 1; i < 32; i += (2 * number)) {
+    int sum = 0;
+    char checkBit = encodedBitsFileBuffer[number - 1];
+    encodedBitsFileBuffer[number - 1] = '0';
+    for (int i = number - 1; i < encodedBlockLength; i += (2 * number)) {
         for (int j = 0; j < number; j++) {
-            result ^= encodedBitsFileBuffer[i + j];
+            int bitResult = (encodedBitsFileBuffer[i + j]) - '0';
+            sum += bitResult;
+            // printf("generation for %d used index %d\n", number, i + j);
         }
     }
-    result ^= encodedBitsFileBuffer[number - 1];
-    return result;
+    return checkBit != ((sum % 2 == 0) ? '0' : '1');
 }
 
 void copyToDecodedBuffer() {
@@ -118,7 +121,7 @@ char flipBit(char bit) {
 void hummingDecode() {
     int errorIndex = 0;
     for (int i = 0; i < 5; i++) {
-        int power = (int)(pow(2, i));
+        int power = ((int)(pow(2, i)));
         errorIndex += (power * IsCheckBitWrong(power));
     }
     if (errorIndex != 0) {
@@ -135,8 +138,12 @@ void writeBlockToSectionBuffer(int startIndexInSection) {
 }
 
 void translateSectionFromCharBitsToBytes() {
-    for (int i = 0; i < extendedBufferLength; i+=8) {
-        bytesFileBuffer[i] = (int)(strtol(&(sectionFileBuffer[8*i]), 0, 2));
+    // TODO https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
+    for (int i = 0; i < originalBlockLength; i++) {
+        for (int j = 0; j < 8; j++) {
+            int bitResult = sectionFileBuffer[(8 * i) + j] == '1' ? 1 : 0;
+            bytesFileBuffer[i] += (bitResult << (7 - j));
+        }
     }
 }
 
@@ -182,7 +189,7 @@ int main(int argc, char* argv[]) {
 
     while (strcmp(fileName, "quit") != 0) {
         // Opening file
-        filePointer = fopen(fileName, "r");
+        filePointer = fopen(fileName, "w");
         if (filePointer == NULL) {
             perror("Can't open file");
             exit(1);
