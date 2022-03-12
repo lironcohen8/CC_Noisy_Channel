@@ -181,9 +181,6 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    // Creating socket and connecting to it
-    connectToSocket();
-
     // Ask user to enter file name
     fileName = (char*)calloc(MAX_PATH, sizeof(char));
     if (fileName == NULL) {
@@ -200,6 +197,9 @@ int main(int argc, char* argv[]) {
             perror("Can't open file");
             exit(1);
         }
+
+        // Creating socket and connecting to it
+        connectToSocket();
 
         // Creating buffers
         createBuffers();
@@ -229,8 +229,11 @@ int main(int argc, char* argv[]) {
         printf("received: %d bytes\n", bitsReadTotal / 8);
         printf("wrote: %d bytes\n", bytesWrittenTotal);
         printf("corrected %d errors\n", bitsCorrectedTotal);
+
+        // Getting new fileName and initializing parameters
         printf("enter file name:\n");
         retVal = scanf("%s", fileName);
+        finished = 0;
     }
 
     // Cleaning up Winsock

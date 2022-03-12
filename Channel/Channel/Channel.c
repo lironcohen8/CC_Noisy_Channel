@@ -272,8 +272,11 @@ int main(int argc, char* argv[]) {
         // Printing message
         printf("retransmitted %d bytes, flipped %d bits\n", bitsWrittenTotal / 8, numberOfFlippedBits);
         printf("continue? (yes/no)\n");
+
+        // Getting user's answer and initializing parameters
         retVal = scanf("%s", shouldContinue);
         finished = 0;
+
     } while (strcmp(shouldContinue, "yes") == 0); // continue as long as the user wants to
 
     // Cleaning up Winsock

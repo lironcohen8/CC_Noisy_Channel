@@ -65,7 +65,7 @@ void createBuffers() {
     }
 }
 
-void readSectionFromBuffer() {
+void readSectionFromFile() {
     // Reading 26 bytes from file
     bytesRead = fread(rawBytesFileBuffer, 1, originalBlockLength, filePointer);
     if (bytesRead == 0) {
@@ -163,9 +163,6 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    // Creating socket and connecting to it
-    connectToSocket();
-
     // Ask user to enter file name
     fileName = (char*)calloc(MAX_PATH, sizeof(char));
     if (fileName == NULL) {
@@ -183,12 +180,15 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
 
+        // Creating socket and connecting to it
+        connectToSocket();
+
         // Creating buffers
         createBuffers();
 
         // Reading file content to buffer
         while (1) {
-            readSectionFromBuffer();
+            readSectionFromFile();
             if (finished == 1) {
                 break;
             }
@@ -220,13 +220,15 @@ int main(int argc, char* argv[]) {
         // Closing socket and files
         closesocket(sockfd);
         fclose(filePointer);
-        finished = 0;
 
         // Printing messages
         printf("file length: %d bytes\n", bytesReadTotal);
         printf("sent: %d bytes\n", bitsWrittenTotal / 8);
+
+        // Getting new fileName and initializing parameters
         printf("enter file name:\n");
         retVal = scanf("%s", fileName);
+        finished = 0;
     }
 
     // Cleaning up Winsock
