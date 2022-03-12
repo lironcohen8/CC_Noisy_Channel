@@ -14,7 +14,7 @@ char* fileName, * channelRecieverIPString, * encodedBitsFileBuffer, * decodedBit
 FILE* filePointer;
 short channelRecieverPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 1, bitsReadTotal = 0, bitsCorrectedTotal = 0;
+int sockfd, retVal, finishedFile = 0, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 1, bitsReadTotal = 0, bitsCorrectedTotal = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -80,7 +80,10 @@ void readBlockFromSocket() {
         bitsCurrRead = recv(sockfd, *((&encodedBitsFileBuffer) + bitsRead), encodedBlockLength - bitsRead, 0);
         bitsRead += bitsCurrRead;
     }
-    if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
+    if (bitsRead == 0) {
+        finishedFile = 1;
+    }
+    else if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
         perror("Couldn't read encoded block from socket");
         exit(1);
     }
@@ -132,7 +135,7 @@ void hummingDecode() {
 }
 
 void writeBlockToSectionBuffer(int startIndexInSection) {
-    for (int i = startIndexInSection; i < originalBlockLength; i++) {
+    for (int i = startIndexInSection; i < (startIndexInSection + originalBlockLength); i++) {
         sectionFileBuffer[i] = decodedBitsFileBuffer[i % originalBlockLength];
     }
 }
@@ -149,9 +152,9 @@ void translateSectionFromCharBitsToBytes() {
 
 void writeSectionToFile() {
     // Writing decoded block to file
-    bytesWritten = fwrite(bytesFileBuffer, 1, extendedBufferLength, filePointer);
-    if (bytesWritten != extendedBufferLength) { // There was an error
-        perror("Couldn't read block from file");
+    bytesWritten = fwrite(bytesFileBuffer, 1, originalBlockLength, filePointer);
+    if (bytesWritten != originalBlockLength) { // There was an error
+        perror("Couldn't write block to file");
         exit(1);
     }
     bytesWrittenTotal += bytesWritten;
@@ -199,11 +202,17 @@ int main(int argc, char* argv[]) {
         createBuffers();
 
         // Reading file content from socket
-        while (bitsCurrRead > 0) {
+        while (1) {
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 readBlockFromSocket();
+                if (finishedFile == 1) {
+                    break;
+                }
                 hummingDecode();
                 writeBlockToSectionBuffer(i);
+            }
+            if (finishedFile == 1) {
+                break;
             }
             translateSectionFromCharBitsToBytes();
             writeSectionToFile();
