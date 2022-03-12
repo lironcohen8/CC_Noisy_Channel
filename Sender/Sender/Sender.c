@@ -94,6 +94,7 @@ void generateParityBit(int number) {
         for (int j = 0; j < number; j++) {
             int bitResult = (encodedBitsFileBuffer[i + j]) - '0';
             sum += bitResult;
+            // printf("generation for %d used index %d\n", number, i + j);
         }
     }
     encodedBitsFileBuffer[number - 1] = (sum % 2 == 0) ? '0' : '1';
@@ -202,8 +203,15 @@ int main(int argc, char* argv[]) {
                 printf("\n");
                 // TODO delete after checking
                 for (int k = 0; k < 31; k++) {
-                    printf("%c", encodedBitsFileBuffer[k]);
+                    if (k != 0 && k != 1 && k != 3 && k != 7 && k != 15) {
+                        printf("%c", encodedBitsFileBuffer[k]);
+                    }
                 }
+                printf("%c", encodedBitsFileBuffer[15]);
+                printf("%c", encodedBitsFileBuffer[7]);
+                printf("%c", encodedBitsFileBuffer[3]);
+                printf("%c", encodedBitsFileBuffer[1]);
+                printf("%c", encodedBitsFileBuffer[0]);
                 printf("\n\n");
                 writeBlockToSocket();
             }

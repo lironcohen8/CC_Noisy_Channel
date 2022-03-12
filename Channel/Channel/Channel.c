@@ -152,11 +152,11 @@ void acceptConnections() {
     }
 
     // Accepting reciever connection
-    recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrSize);
+    /*recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrSize);
     if (recieverConnSockfd < 0) {
         perror("Accept reciever connection failed");
         exit(1);
-    }
+    }*/
 }
 
 void createBuffer() {
@@ -190,7 +190,6 @@ char flipBit(char bit) {
 }
 
 void addRandomNoise() {
-    memset(&dataBuffer, 0, encodedBlockLength);
     srand(randomSeed);
     for (int i = 0; i < encodedBlockLength; i++) {
         double randomDouble = (double)rand() / (double)RAND_MAX;
@@ -203,7 +202,6 @@ void addRandomNoise() {
 }
 
 void addDeterministicNoise() {
-    memset(&dataBuffer, 0, encodedBlockLength);
     for (int i = cycleLength - 1; i < encodedBlockLength; i += cycleLength) {
         dataBuffer[i] = flipBit(dataBuffer[i]);
         numberOfFlippedBits++;
