@@ -14,7 +14,7 @@ char* fileName, * channelRecieverIPString, * encodedBitsFileBuffer, * decodedBit
 FILE* filePointer;
 short channelRecieverPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, finishedFile = 0, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 1, bitsReadTotal = 0, bitsCorrectedTotal = 0;
+int sockfd, retVal, finished = 0, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 1, bitsReadTotal = 0, bitsCorrectedTotal = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -79,13 +79,16 @@ void readBlockFromSocket() {
     while (bitsRead < encodedBlockLength) {
         bitsCurrRead = recv(sockfd, *((&encodedBitsFileBuffer) + bitsRead), encodedBlockLength - bitsRead, 0);
         bitsRead += bitsCurrRead;
+        if (bitsCurrRead == 0) {
+            finished = 1;
+            break;
+        }
     }
-    if (bitsRead == 0) {
-        finishedFile = 1;
-    }
-    else if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
-        perror("Couldn't read encoded block from socket");
-        exit(1);
+    if (finished == 0) {
+        if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
+            perror("Couldn't read encoded block from socket");
+            exit(1);
+        }
     }
     bitsReadTotal += bitsRead;
 }
@@ -205,13 +208,13 @@ int main(int argc, char* argv[]) {
         while (1) {
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 readBlockFromSocket();
-                if (finishedFile == 1) {
+                if (finished == 1) {
                     break;
                 }
                 hummingDecode();
                 writeBlockToSectionBuffer(i);
             }
-            if (finishedFile == 1) {
+            if (finished == 1) {
                 break;
             }
             translateSectionFromCharBitsToBytes();

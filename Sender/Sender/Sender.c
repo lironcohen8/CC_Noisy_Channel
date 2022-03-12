@@ -14,7 +14,7 @@ char* fileName, * channelSenderIPString, * rawBytesFileBuffer, * originalBitsFil
 FILE* filePointer;
 short channelSenderPort;
 struct sockaddr_in channelAddr;
-int sockfd, retVal, bytesRead = 0, bytesReadTotal = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0, finishedFile = 0;
+int sockfd, retVal, bytesRead = 0, bytesReadTotal = 0, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0, finished = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -69,7 +69,7 @@ void readSectionFromBuffer() {
     // Reading 26 bytes from file
     bytesRead = fread(rawBytesFileBuffer, 1, originalBlockLength, filePointer);
     if (bytesRead == 0) {
-        finishedFile = 1;
+        finished = 1;
     }
     else if (bytesRead != originalBlockLength) { // There was an error
         perror("Couldn't read section from file");
@@ -189,30 +189,30 @@ int main(int argc, char* argv[]) {
         // Reading file content to buffer
         while (1) {
             readSectionFromBuffer();
-            if (finishedFile == 1) {
+            if (finished == 1) {
                 break;
             }
             translateSectionFromBytesToCharBits();
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 copyDataToEncodedBuffer(i);
                 addHummingCheckBits(i);
-                // TODO delete after checking
-                for (int j = i; j < 26+i; j++) {
-                    printf("%c", originalBitsFileBuffer[j]);
-                }
-                printf("\n");
-                // TODO delete after checking
-                for (int k = 0; k < 31; k++) {
-                    if (k != 0 && k != 1 && k != 3 && k != 7 && k != 15) {
-                        printf("%c", encodedBitsFileBuffer[k]);
-                    }
-                }
-                printf("%c", encodedBitsFileBuffer[15]);
-                printf("%c", encodedBitsFileBuffer[7]);
-                printf("%c", encodedBitsFileBuffer[3]);
-                printf("%c", encodedBitsFileBuffer[1]);
-                printf("%c", encodedBitsFileBuffer[0]);
-                printf("\n\n");
+                //// TODO delete after checking
+                //for (int j = i; j < 26+i; j++) {
+                //    printf("%c", originalBitsFileBuffer[j]);
+                //}
+                //printf("\n");
+                //// TODO delete after checking
+                //for (int k = 0; k < 31; k++) {
+                //    if (k != 0 && k != 1 && k != 3 && k != 7 && k != 15) {
+                //        printf("%c", encodedBitsFileBuffer[k]);
+                //    }
+                //}
+                //printf("%c", encodedBitsFileBuffer[15]);
+                //printf("%c", encodedBitsFileBuffer[7]);
+                //printf("%c", encodedBitsFileBuffer[3]);
+                //printf("%c", encodedBitsFileBuffer[1]);
+                //printf("%c", encodedBitsFileBuffer[0]);
+                //printf("\n\n");
                 writeBlockToSocket();
             }
         }
@@ -220,7 +220,7 @@ int main(int argc, char* argv[]) {
         // Closing socket and files
         closesocket(sockfd);
         fclose(filePointer);
-        finishedFile = 0;
+        finished = 0;
 
         // Printing messages
         printf("file length: %d bytes\n", bytesReadTotal);

@@ -1,4 +1,5 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <math.h>
 #include <winsock2.h>
@@ -9,11 +10,11 @@
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* noiseMethod, * dataBuffer, * IPAddress, * shouldContinue, * hostBuffer;
+char* noiseMethod, * dataBuffer, * IPAddress, shouldContinue[4], * hostBuffer;
 struct sockaddr_in senderListenSockAddr, recieverListenSockAddr, senderConnSockAddr, recieverConnSockAddr;
 struct hostent* hostEntry;
 int senderListenSockfd, recieverListenSockfd, senderConnSockfd, recieverConnSockfd;
-int retVal = 0, randomSeed = 0, cycleLength = 0;
+int retVal = 0, randomSeed = 0, cycleLength = 0, finished = 0;
 int bitsRead = 0, bitsCurrRead = 1, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
 int isRandomNoise = 0, numberOfFlippedBits = 0;
 int addrSize = sizeof(struct sockaddr_in);
@@ -173,10 +174,16 @@ void readOriginalDataFromSocket() {
     while (bitsRead < encodedBlockLength) {
         bitsCurrRead = recv(senderConnSockfd, *((&dataBuffer) + bitsRead), encodedBlockLength - bitsRead, 0);
         bitsRead += bitsCurrRead;
+        if (bitsCurrRead == 0) {
+            finished = 1;
+            break;
+        }
     }
-    if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
-        perror("Couldn't read encoded block from socket");
-        exit(1);
+    if (finished == 0) {
+        if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
+            perror("Couldn't read encoded block from socket");
+            exit(1);
+        }
     }
 }
 
@@ -244,9 +251,12 @@ int main(int argc, char* argv[]) {
         createBuffer();
 
         // Reading data from socket and adding noise
-        while (bitsCurrRead > 0) {
+        while (1) {
             readOriginalDataFromSocket();
-            if (isRandomNoise == 1) {
+            if (finished == 1) {
+                break;
+            }
+            else if (isRandomNoise == 1) {
                 addRandomNoise();
             }
             else {
@@ -262,7 +272,8 @@ int main(int argc, char* argv[]) {
         // Printing message
         printf("retransmitted %d bytes, flipped %d bits\n", bitsWrittenTotal / 8, numberOfFlippedBits);
         printf("continue? (yes/no)\n");
-        sscanf_s("%s", shouldContinue);
+        retVal = scanf("%s", shouldContinue);
+        finished = 0;
     } while (strcmp(shouldContinue, "yes") == 0); // continue as long as the user wants to
 
     // Cleaning up Winsock
