@@ -101,7 +101,6 @@ int IsCheckBitWrong(int number) {
         for (int j = 0; j < number; j++) {
             int bitResult = (encodedBitsFileBuffer[i + j]) - '0';
             sum += bitResult;
-            // printf("generation for %d used index %d\n", number, i + j);
         }
     }
     encodedBitsFileBuffer[number - 1] = checkBit;
@@ -145,7 +144,7 @@ void writeBlockToSectionBuffer(int startIndexInSection) {
 }
 
 void translateSectionFromCharBitsToBytes() {
-    // TODO https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
+    // Based on answer from: https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
     bytesFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
     if (bytesFileBuffer == NULL) {
         perror("Can't allocate memory for buffer");
@@ -182,7 +181,7 @@ int main(int argc, char* argv[]) {
 
     // Initializing Winsock
     retVal = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (retVal != NO_ERROR) {
+    if (retVal != 0) {
         perror("Error at WSAStartup");
         exit(1);
     }
@@ -247,7 +246,7 @@ int main(int argc, char* argv[]) {
 
     // Cleaning up Winsock
     retVal = WSACleanup();
-    if (retVal != NO_ERROR) {
+    if (retVal != 0) {
         perror("Error at WSACleanup");
         exit(1);
     }

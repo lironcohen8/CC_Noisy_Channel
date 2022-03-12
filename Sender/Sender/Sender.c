@@ -79,7 +79,7 @@ void readSectionFromFile() {
 }
 
 void translateSectionFromBytesToCharBits() {
-    // TODO https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
+    // Based on answer from: https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
     for (int i = 0; i < originalBlockLength; i++) {
         for (int j = 0; j < 8; j++) {
             int bitResult = (rawBytesFileBuffer[i] & (1 << (7 - j))) >> (7 - j);
@@ -94,21 +94,9 @@ void generateParityBit(int number) {
         for (int j = 0; j < number; j++) {
             int bitResult = (encodedBitsFileBuffer[i + j]) - '0';
             sum += bitResult;
-            // printf("generation for %d used index %d\n", number, i + j);
         }
     }
     encodedBitsFileBuffer[number - 1] = (sum % 2 == 0) ? '0' : '1';
-    /*int result = 0;
-    for (int i = number - 1; i < encodedBlockLength; i += (2*number)) {
-        for (int j = 0; j < number; j++) {
-            int bitResult = (encodedBitsFileBuffer[i + j]) - '0'; 
-            if (result != bitResult) {
-                printf("generating %d, result changed from ")
-            }
-            result = (result == bitResult) ? 0 : 1;
-        }
-    }
-    encodedBitsFileBuffer[number - 1] = (char)(result + '0');*/
 }
 
 void addHummingCheckBits() {
@@ -158,7 +146,7 @@ int main(int argc, char* argv[]) {
 
     // Initializing Winsock
     retVal = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (retVal != NO_ERROR) {
+    if (retVal != 0) {
         perror("Error at WSAStartup");
         exit(1);
     }
@@ -196,23 +184,6 @@ int main(int argc, char* argv[]) {
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
                 copyDataToEncodedBuffer(i);
                 addHummingCheckBits(i);
-                //// TODO delete after checking
-                //for (int j = i; j < 26+i; j++) {
-                //    printf("%c", originalBitsFileBuffer[j]);
-                //}
-                //printf("\n");
-                //// TODO delete after checking
-                //for (int k = 0; k < 31; k++) {
-                //    if (k != 0 && k != 1 && k != 3 && k != 7 && k != 15) {
-                //        printf("%c", encodedBitsFileBuffer[k]);
-                //    }
-                //}
-                //printf("%c", encodedBitsFileBuffer[15]);
-                //printf("%c", encodedBitsFileBuffer[7]);
-                //printf("%c", encodedBitsFileBuffer[3]);
-                //printf("%c", encodedBitsFileBuffer[1]);
-                //printf("%c", encodedBitsFileBuffer[0]);
-                //printf("\n\n");
                 writeBlockToSocket();
             }
         }
@@ -235,7 +206,7 @@ int main(int argc, char* argv[]) {
 
     // Cleaning up Winsock
     retVal = WSACleanup();
-    if (retVal != NO_ERROR) {
+    if (retVal != 0) {
         perror("Error at WSACleanup");
         exit(1);
     }

@@ -38,7 +38,7 @@ void parseArguments(char* argv[]) {
 }
 
 void getIPAddress() {
-    // TODO https://www.geeksforgeeks.org/c-program-display-hostname-ip-address/
+    // Based on answer from: https://www.geeksforgeeks.org/c-program-display-hostname-ip-address/
     hostBuffer = (char*)calloc(1024, sizeof(char));
     if (hostBuffer == NULL) {
         perror("Allocation for hostname failed");
@@ -73,7 +73,6 @@ void initSenderSocket() {
     memset(&senderListenSockAddr, 0, addrSize);
     getIPAddress();
     senderListenSockAddr.sin_family = AF_INET;
-    // TODO change senderListenSockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     inet_pton(AF_INET, (PCSTR)IPAddress, &(senderListenSockAddr.sin_addr.s_addr));
     senderListenSockAddr.sin_port = htons(0); // Will be changed by bind()
 
@@ -93,7 +92,6 @@ void initSenderSocket() {
 
     // Printing IP and port of sender socket
     if (getsockname(senderListenSockfd, (struct sockaddr*)&senderListenSockAddr, &addrSize) == 0) {
-        //inet_ntop(AF_INET, &senderListenSockAddr.sin_addr, IPAddress, 1024); //TODO change number
         printf("sender socket: IP address = %s port = %d\n", IPAddress, ntohs(senderListenSockAddr.sin_port));
     }
     else {
@@ -113,7 +111,6 @@ void initRecieverSocket() {
     // Creating reciever address struct and getting IP address
     memset(&recieverListenSockAddr, 0, addrSize);
     recieverListenSockAddr.sin_family = AF_INET;
-    // TODO change recieverListenSockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     inet_pton(AF_INET, (PCSTR)IPAddress, &(recieverListenSockAddr.sin_addr.s_addr));
     recieverListenSockAddr.sin_port = htons(0); // Will be changed by bind()
 
@@ -133,7 +130,6 @@ void initRecieverSocket() {
 
     // Printing IP and port of reciever socket
     if (getsockname(recieverListenSockfd, (struct sockaddr*)&recieverListenSockAddr, &addrSize) == 0) {
-        //inet_ntop(AF_INET, &recieverListenSockAddr.sin_addr, IPAddress, 1024); //TODO change
         printf("reciever socket: IP address = %s port = %d\n", IPAddress, ntohs(recieverListenSockAddr.sin_port));
     }
     else {
@@ -234,7 +230,7 @@ int main(int argc, char* argv[]) {
 
     // Initializing Winsock
     retVal = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (retVal != NO_ERROR) {
+    if (retVal != 0) {
         perror("Error at WSAStartup");
         exit(1);
     }
@@ -279,13 +275,14 @@ int main(int argc, char* argv[]) {
         bitsWrittenTotal = 0;
         numberOfFlippedBits = 0;
 
-    } while (strcmp(shouldContinue, "yes") == 0); // continue as long as the user wants to
+    } while (strcmp(shouldContinue, "yes") == 0); // Continue as long as the user wants to
 
     // Cleaning up Winsock
     retVal = WSACleanup();
-    if (retVal != NO_ERROR) {
+    if (retVal != 0) {
         perror("Error at WSACleanup");
         exit(1);
     }
+
     exit(0);
 }
