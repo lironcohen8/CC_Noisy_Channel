@@ -104,6 +104,7 @@ int IsCheckBitWrong(int number) {
             // printf("generation for %d used index %d\n", number, i + j);
         }
     }
+    encodedBitsFileBuffer[number - 1] = checkBit;
     return checkBit != ((sum % 2 == 0) ? '0' : '1');
 }
 
@@ -145,6 +146,11 @@ void writeBlockToSectionBuffer(int startIndexInSection) {
 
 void translateSectionFromCharBitsToBytes() {
     // TODO https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
+    bytesFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
+    if (bytesFileBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
     for (int i = 0; i < originalBlockLength; i++) {
         for (int j = 0; j < 8; j++) {
             int bitResult = sectionFileBuffer[(8 * i) + j] == '1' ? 1 : 0;
@@ -234,6 +240,9 @@ int main(int argc, char* argv[]) {
         printf("enter file name:\n");
         retVal = scanf("%s", fileName);
         finished = 0;
+        bitsReadTotal = 0;
+        bytesWrittenTotal = 0;
+        bitsCorrectedTotal = 0;
     }
 
     // Cleaning up Winsock

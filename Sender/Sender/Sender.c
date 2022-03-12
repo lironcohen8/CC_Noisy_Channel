@@ -229,6 +229,8 @@ int main(int argc, char* argv[]) {
         printf("enter file name:\n");
         retVal = scanf("%s", fileName);
         finished = 0;
+        bytesReadTotal = 0;
+        bitsWrittenTotal = 0;
     }
 
     // Cleaning up Winsock

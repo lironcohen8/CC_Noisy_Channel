@@ -276,6 +276,8 @@ int main(int argc, char* argv[]) {
         // Getting user's answer and initializing parameters
         retVal = scanf("%s", shouldContinue);
         finished = 0;
+        bitsWrittenTotal = 0;
+        numberOfFlippedBits = 0;
 
     } while (strcmp(shouldContinue, "yes") == 0); // continue as long as the user wants to
 
