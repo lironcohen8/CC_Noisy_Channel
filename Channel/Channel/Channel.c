@@ -152,11 +152,11 @@ void acceptConnections() {
     }
 
     // Accepting reciever connection
-    /*recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrSize);
+    recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrSize);
     if (recieverConnSockfd < 0) {
         perror("Accept reciever connection failed");
         exit(1);
-    }*/
+    }
 }
 
 void createBuffer() {

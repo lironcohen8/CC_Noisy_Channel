@@ -1,16 +1,18 @@
-#include <stdio.h>
+#define _CRT_SECURE_NO_WARNINGS
 #include <math.h>
-#include "winsock2.h"
-#include "ws2tcpip.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #define originalBlockLength 26
 #define encodedBlockLength 31
 #define extendedBufferLength 208 // 26 bytes * 8 bits per bytes
 #pragma comment(lib, "ws2_32.lib")
 
 WSADATA wsaData;
-char* fileName, * channelSenderIPString, * encodedBitsFileBuffer, * decodedBitsFileBuffer, * sectionFileBuffer , * bytesFileBuffer;
+char* fileName, * channelRecieverIPString, * encodedBitsFileBuffer, * decodedBitsFileBuffer, * sectionFileBuffer , * bytesFileBuffer;
 FILE* filePointer;
-short channelSenderPort;
+short channelRecieverPort;
 struct sockaddr_in channelAddr;
 int sockfd, retVal, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 1, bitsReadTotal = 0, bitsCorrectedTotal = 0;
 
@@ -24,13 +26,13 @@ void connectToSocket() {
 
     // Creating channel address struct
     channelAddr.sin_family = AF_INET;
-    inet_pton(AF_INET, (PCSTR)channelSenderIPString, &(channelAddr.sin_addr.s_addr));
+    inet_pton(AF_INET, (PCSTR)channelRecieverIPString, &(channelAddr.sin_addr.s_addr));
     /*channelAddr.sin_addr.s_addr = inet_addr(channelSenderIPString);
     if (channelAddr.sin_addr.s_addr == INADDR_NONE) {
         perror("Can't convert channel IP string to long");
         exit(1);
     }*/
-    channelAddr.sin_port = htons(channelSenderPort);
+    channelAddr.sin_port = htons(channelRecieverPort);
 
     // Connecting to server
     retVal = connect(sockfd, (struct sockaddr*)&channelAddr, sizeof(channelAddr));
@@ -97,11 +99,11 @@ int verifyCheckbit(int number) {
 }
 
 void copyToDecodedBuffer() {
-    int originalIndex = 0;
-    for (int encodedIndex = 2; encodedIndex < 32; encodedIndex++) {
-        if (encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
-            decodedBitsFileBuffer[originalIndex] = encodedBitsFileBuffer[encodedIndex];
-            originalIndex++;
+    int decodedIndex = 0;
+    for (int encodedIndex = 0; encodedIndex < encodedBlockLength; encodedIndex++) {
+        if (encodedIndex != 0 && encodedIndex != 1 && encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
+            decodedBitsFileBuffer[decodedIndex] = encodedBitsFileBuffer[encodedIndex];
+            decodedIndex++;
         }
     }
 }
@@ -156,8 +158,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Parsing arguments
-    channelSenderIPString = argv[1];
-    sscanf_s(argv[2], "%hu", &channelSenderPort);
+    channelRecieverIPString = argv[1];
+    sscanf_s(argv[2], "%hu", &channelRecieverPort);
 
     // Initializing Winsock
     retVal = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -176,11 +178,11 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     printf("enter file name:\n");
-    sscanf_s("%s", fileName, sizeof(fileName));
+    retVal = scanf("%s", fileName);
 
     while (strcmp(fileName, "quit") != 0) {
         // Opening file
-        fopen_s(&filePointer, fileName, "w");
+        filePointer = fopen(fileName, "r");
         if (filePointer == NULL) {
             perror("Can't open file");
             exit(1);
@@ -208,6 +210,8 @@ int main(int argc, char* argv[]) {
         printf("received: %d bytes\n", bitsReadTotal / 8);
         printf("wrote: %d bytes\n", bytesWrittenTotal);
         printf("corrected %d errors\n", bitsCorrectedTotal);
+        printf("enter file name:\n");
+        retVal = scanf("%s", fileName);
     }
 
     // Cleaning up Winsock
