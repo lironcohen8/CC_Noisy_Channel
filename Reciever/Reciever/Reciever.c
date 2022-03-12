@@ -77,7 +77,7 @@ void readBlockFromSocket() {
     bitsRead = 0;
     bitsCurrRead = 1;
     while (bitsRead < encodedBlockLength) {
-        bitsCurrRead = recv(sockfd, *((&decodedBitsFileBuffer) + bitsRead), encodedBlockLength - bitsRead, 0);
+        bitsCurrRead = recv(sockfd, *((&encodedBitsFileBuffer) + bitsRead), encodedBlockLength - bitsRead, 0);
         bitsRead += bitsCurrRead;
     }
     if (bitsCurrRead < 0 || bitsRead != encodedBlockLength) { // There was an error
@@ -87,7 +87,7 @@ void readBlockFromSocket() {
     bitsReadTotal += bitsRead;
 }
 
-int verifyCheckbit(int number) {
+int IsCheckBitWrong(int number) {
     int result = 0;
     for (int i = number - 1; i < 32; i += (2 * number)) {
         for (int j = 0; j < number; j++) {
@@ -117,12 +117,12 @@ char flipBit(char bit) {
 
 void hummingDecode() {
     int errorIndex = 0;
-    for (int i = 1; i < 5; i++) {
+    for (int i = 0; i < 5; i++) {
         int power = (int)(pow(2, i));
-        errorIndex += (power * verifyCheckbit(power));
+        errorIndex += (power * IsCheckBitWrong(power));
     }
     if (errorIndex != 0) {
-        encodedBitsFileBuffer[errorIndex] = flipBit(encodedBitsFileBuffer[errorIndex]);
+        encodedBitsFileBuffer[errorIndex-1] = flipBit(encodedBitsFileBuffer[errorIndex-1]);
         bitsCorrectedTotal++;
     }
     copyToDecodedBuffer();
