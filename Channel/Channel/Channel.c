@@ -27,6 +27,7 @@ void parseArguments(char* argv[]) {
         noiseProbability /= pow(2, 16);
         sscanf_s(argv[3], "%du", &randomSeed);
         isRandomNoise = 1;
+        srand(randomSeed);
     }
     else if (strcmp(noiseMethod, "-d") == 0) { // Deterministic noise
         sscanf_s(argv[2], "%du", &cycleLength);
@@ -191,7 +192,6 @@ char flipBit(char bit) {
 }
 
 void addRandomNoise() {
-    srand(randomSeed);
     for (int i = 0; i < encodedBlockLength; i++) {
         double randomDouble = (double)rand() / (double)RAND_MAX;
         int toFlip = randomDouble < noiseProbability;
