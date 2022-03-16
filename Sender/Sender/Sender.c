@@ -71,16 +71,16 @@ void readSectionFromFile() {
     if (bytesRead == 0) {
         finished = 1;
     }
-    else if (bytesRead != originalBlockLength) { // There was an error
+    else if (bytesRead < originalBlockLength && !feof(filePointer)) { // There was an error
         perror("Couldn't read section from file");
         exit(1);
     }
     bytesReadTotal += bytesRead;
 }
 
-void translateSectionFromBytesToCharBits() {
+void translateSectionFromBytesToCharBits(int blockLength) {
     // Based on answer from: https://www.dreamincode.net/forums/topic/134396-how-to-convert-a-char-to-its-8-binary-bits-in-c/
-    for (int i = 0; i < originalBlockLength; i++) {
+    for (int i = 0; i < blockLength; i++) {
         for (int j = 0; j < 8; j++) {
             int bitResult = (rawBytesFileBuffer[i] & (1 << (7 - j))) >> (7 - j);
             originalBitsFileBuffer[(8 * i) + j] = bitResult == 1 ? '1' : '0';
@@ -92,6 +92,9 @@ void generateParityBit(int number) {
     int sum = 0;
     for (int i = number - 1; i < encodedBlockLength; i += (2 * number)) {
         for (int j = 0; j < number; j++) {
+            if (encodedBitsFileBuffer[i + j] == '\0') {
+                break;
+            }
             int bitResult = (encodedBitsFileBuffer[i + j]) - '0';
             sum += bitResult;
         }
@@ -180,11 +183,13 @@ int main(int argc, char* argv[]) {
             if (finished == 1) {
                 break;
             }
-            translateSectionFromBytesToCharBits();
+            translateSectionFromBytesToCharBits(bytesRead);
             for (int i = 0; i < extendedBufferLength; i += originalBlockLength) {
-                copyDataToEncodedBuffer(i);
-                addHummingCheckBits(i);
-                writeBlockToSocket();
+                if (originalBitsFileBuffer[i] != '\0') {
+                    copyDataToEncodedBuffer(i);
+                    addHummingCheckBits(i);
+                    writeBlockToSocket();
+                }
             }
         }
 
