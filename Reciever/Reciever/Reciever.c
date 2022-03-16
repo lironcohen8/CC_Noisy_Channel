@@ -15,6 +15,7 @@ FILE* filePointer;
 short channelRecieverPort;
 struct sockaddr_in channelAddr;
 int sockfd, retVal, finished = 0, bytesWritten = 0, bytesWrittenTotal = 0, bitsRead = 0, bitsCurrRead = 1, bitsReadTotal = 0, bitsCorrectedTotal = 0;
+int blockBitLength = 0, blockLength = 0;
 
 void connectToSocket() {
     // Creating socket 
@@ -42,21 +43,7 @@ void connectToSocket() {
     }
 }
 
-void createBuffers() {
-    // Creating buffer for encoded noised content - 31 bytes (bit chars)
-    encodedBitsFileBuffer = (char*)calloc(encodedBlockLength, sizeof(char));
-    if (encodedBitsFileBuffer == NULL) {
-        perror("Can't allocate memory for buffer");
-        exit(1);
-    }
-
-    // Creating buffer for decoded content - 26 bytes (bit chars)
-    decodedBitsFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
-    if (decodedBitsFileBuffer == NULL) {
-        perror("Can't allocate memory for buffer");
-        exit(1);
-    }
-
+void createSectionBuffers() {
     // Creating buffer for section file content -  26 bytes * 8 bits per bytes (26 char bytes)
     sectionFileBuffer = (char*)calloc(extendedBufferLength, sizeof(char));
     if (sectionFileBuffer == NULL) {
@@ -67,6 +54,22 @@ void createBuffers() {
     // Creating buffer for file content -  26 bytes
     bytesFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
     if (bytesFileBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
+}
+
+void createBlockBuffers() {
+    // Creating buffer for encoded noised content - 31 bytes (bit chars)
+    encodedBitsFileBuffer = (char*)calloc(encodedBlockLength, sizeof(char));
+    if (encodedBitsFileBuffer == NULL) {
+        perror("Can't allocate memory for buffer");
+        exit(1);
+    }
+
+    // Creating buffer for decoded content - 26 bytes (bit chars)
+    decodedBitsFileBuffer = (char*)calloc(originalBlockLength, sizeof(char));
+    if (decodedBitsFileBuffer == NULL) {
         perror("Can't allocate memory for buffer");
         exit(1);
     }
@@ -89,8 +92,18 @@ void readBlockFromSocket() {
             perror("Couldn't read encoded block from socket");
             exit(1);
         }
+        blockBitLength = encodedBlockLength;
+        if (encodedBitsFileBuffer[encodedBlockLength-1] == '\0') {
+            blockBitLength = strlen(encodedBitsFileBuffer);
+        }
+        /*for (int i = 0; i < encodedBlockLength; i++) {
+            if (encodedBitsFileBuffer[i] == '\0') {
+                encodedBlockBitLength = i;
+                break;
+            }
+        }*/
+        bitsReadTotal += blockBitLength;
     }
-    bitsReadTotal += bitsRead;
 }
 
 int IsCheckBitWrong(int number) {
@@ -99,6 +112,9 @@ int IsCheckBitWrong(int number) {
     encodedBitsFileBuffer[number - 1] = '0';
     for (int i = number - 1; i < encodedBlockLength; i += (2 * number)) {
         for (int j = 0; j < number; j++) {
+            if (encodedBitsFileBuffer[i + j] == '\0') {
+                break;
+            }
             int bitResult = (encodedBitsFileBuffer[i + j]) - '0';
             sum += bitResult;
         }
@@ -152,6 +168,9 @@ void translateSectionFromCharBitsToBytes() {
     }
     for (int i = 0; i < originalBlockLength; i++) {
         for (int j = 0; j < 8; j++) {
+            if (sectionFileBuffer[(8 * i) + j] == '\0') {
+                break;
+            }
             int bitResult = sectionFileBuffer[(8 * i) + j] == '1' ? 1 : 0;
             bytesFileBuffer[i] += (bitResult << (7 - j));
         }
@@ -159,9 +178,13 @@ void translateSectionFromCharBitsToBytes() {
 }
 
 void writeSectionToFile() {
+    blockLength = originalBlockLength;
+    if (bytesFileBuffer[originalBlockLength-1] == '\0') {
+        blockLength = strlen(bytesFileBuffer);
+    }
     // Writing decoded block to file
-    bytesWritten = fwrite(bytesFileBuffer, 1, originalBlockLength, filePointer);
-    if (bytesWritten != originalBlockLength) { // There was an error
+    bytesWritten = fwrite(bytesFileBuffer, 1, blockLength, filePointer);
+    if (bytesWritten != blockLength) { // There was an error
         perror("Couldn't write block to file");
         exit(1);
     }
@@ -207,7 +230,8 @@ int main(int argc, char* argv[]) {
         connectToSocket();
 
         // Creating buffers
-        createBuffers();
+        createBlockBuffers();
+        createSectionBuffers();
 
         // Reading file content from socket
         while (1) {
@@ -218,12 +242,16 @@ int main(int argc, char* argv[]) {
                 }
                 hummingDecode();
                 writeBlockToSectionBuffer(i);
+                createBlockBuffers();
+            }
+            if (sectionFileBuffer[0] != '\0') {
+                translateSectionFromCharBitsToBytes();
+                writeSectionToFile();
+                createSectionBuffers();
             }
             if (finished == 1) {
                 break;
             }
-            translateSectionFromCharBitsToBytes();
-            writeSectionToFile();
         }
 
         // Closing socket and file
@@ -242,6 +270,8 @@ int main(int argc, char* argv[]) {
         bitsReadTotal = 0;
         bytesWrittenTotal = 0;
         bitsCorrectedTotal = 0;
+        blockBitLength = 0;
+        blockLength = 0;
     }
 
     // Cleaning up Winsock
