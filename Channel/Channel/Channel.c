@@ -11,9 +11,9 @@
 
 WSADATA wsaData;
 char* noiseMethod, * dataBuffer, * IPAddress, shouldContinue[4], * hostBuffer;
-struct sockaddr_in senderListenSockAddr, recieverListenSockAddr, senderConnSockAddr, recieverConnSockAddr;
+struct sockaddr_in senderListenSockAddr, receiverListenSockAddr, senderConnSockAddr, receiverConnSockAddr;
 struct hostent* hostEntry;
-int senderListenSockfd, recieverListenSockfd, senderConnSockfd, recieverConnSockfd;
+int senderListenSockfd, receiverListenSockfd, senderConnSockfd, receiverConnSockfd;
 int retVal = 0, randomSeed = 0, cycleLength = 0, finished = 0;
 int bitsRead = 0, bitsCurrRead = 1, bitsWritten = 0, bitsCurrWrite = 0, bitsWrittenTotal = 0;
 int isRandomNoise = 0, numberOfFlippedBits = 0;
@@ -101,40 +101,40 @@ void initSenderSocket() {
     }
 }
 
-void initRecieverSocket() {
-    // Creating reciever socket for listening
-    recieverListenSockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (recieverListenSockfd < 0) {
+void initReceiverSocket() {
+    // Creating receiver socket for listening
+    receiverListenSockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (receiverListenSockfd < 0) {
         perror("Can't create socket");
         exit(1);
     }
 
-    // Creating reciever address struct and getting IP address
-    memset(&recieverListenSockAddr, 0, addrSize);
-    recieverListenSockAddr.sin_family = AF_INET;
-    inet_pton(AF_INET, (PCSTR)IPAddress, &(recieverListenSockAddr.sin_addr.s_addr));
-    recieverListenSockAddr.sin_port = htons(0); // Will be changed by bind()
+    // Creating receiver address struct and getting IP address
+    memset(&receiverListenSockAddr, 0, addrSize);
+    receiverListenSockAddr.sin_family = AF_INET;
+    inet_pton(AF_INET, (PCSTR)IPAddress, &(receiverListenSockAddr.sin_addr.s_addr));
+    receiverListenSockAddr.sin_port = htons(0); // Will be changed by bind()
 
-    // Binding reciever socket to port
-    retVal = bind(recieverListenSockfd, (struct sockaddr*)&recieverListenSockAddr, addrSize);
+    // Binding receiver socket to port
+    retVal = bind(receiverListenSockfd, (struct sockaddr*)&receiverListenSockAddr, addrSize);
     if (retVal != 0) {
         perror("Bind failed");
         exit(1);
     }
 
-    // Listening on reciever listening socket
-    retVal = listen(recieverListenSockfd, 1);
+    // Listening on receiver listening socket
+    retVal = listen(receiverListenSockfd, 1);
     if (retVal != 0) {
-        perror("Listen to reciever failed");
+        perror("Listen to receiver failed");
         exit(1);
     }
 
-    // Printing IP and port of reciever socket
-    if (getsockname(recieverListenSockfd, (struct sockaddr*)&recieverListenSockAddr, &addrSize) == 0) {
-        printf("reciever socket: IP address = %s port = %d\n", IPAddress, ntohs(recieverListenSockAddr.sin_port));
+    // Printing IP and port of receiver socket
+    if (getsockname(receiverListenSockfd, (struct sockaddr*)&receiverListenSockAddr, &addrSize) == 0) {
+        printf("receiver socket: IP address = %s port = %d\n", IPAddress, ntohs(receiverListenSockAddr.sin_port));
     }
     else {
-        perror("Error at getsockname of reciever socket");
+        perror("Error at getsockname of receiver socket");
         exit(1);
     }
 }
@@ -147,10 +147,10 @@ void acceptConnections() {
         exit(1);
     }
 
-    // Accepting reciever connection
-    recieverConnSockfd = accept(recieverListenSockfd, (struct sockaddr*)&recieverConnSockAddr, &addrSize);
-    if (recieverConnSockfd < 0) {
-        perror("Accept reciever connection failed");
+    // Accepting receiver connection
+    receiverConnSockfd = accept(receiverListenSockfd, (struct sockaddr*)&receiverConnSockAddr, &addrSize);
+    if (receiverConnSockfd < 0) {
+        perror("Accept receiver connection failed");
         exit(1);
     }
 }
@@ -214,7 +214,7 @@ void writeNoisedDataToSocket() {
     bitsWritten = 0;
     bitsCurrWrite = 1;
     while (bitsWritten < encodedBlockLength) {
-        bitsCurrWrite = send(recieverConnSockfd, *((&dataBuffer) + bitsWritten), encodedBlockLength - bitsWritten, 0);
+        bitsCurrWrite = send(receiverConnSockfd, *((&dataBuffer) + bitsWritten), encodedBlockLength - bitsWritten, 0);
         bitsWritten += bitsCurrWrite;
     }
     if (bitsCurrWrite < 0 || bitsWritten != encodedBlockLength) { // There was an error
@@ -235,12 +235,12 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    // Initilizing listen sockets
+    // Initializing listen sockets
     initSenderSocket();
-    initRecieverSocket();
+    initReceiverSocket();
 
     do {
-        // Accepting sender and reciever Connections
+        // Accepting sender and receiver Connections
         acceptConnections();
 
         // Creating buffer for data
@@ -263,7 +263,7 @@ int main(int argc, char* argv[]) {
 
         // closing connections sockets
         closesocket(senderConnSockfd);
-        closesocket(recieverConnSockfd);
+        closesocket(receiverConnSockfd);
 
         // Printing message
         printf("retransmitted %d bytes, flipped %d bits\n", bitsWrittenTotal / 8, numberOfFlippedBits);
