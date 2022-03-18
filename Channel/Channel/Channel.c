@@ -192,6 +192,7 @@ char flipBit(char bit) {
 }
 
 void addRandomNoise() {
+    // Adding random noise using the noise probabilty from cmd args.
     for (int i = 0; i < encodedBlockLength; i++) {
         double randomDouble = (double)rand() / (double)RAND_MAX;
         int toFlip = randomDouble < noiseProbability;
@@ -203,6 +204,7 @@ void addRandomNoise() {
 }
 
 void addDeterministicNoise() {
+    // Adding deterministic noise using the cycle length from cmd args.
     for (int i = cycleLength - 1; i < encodedBlockLength; i += cycleLength) {
         dataBuffer[i] = flipBit(dataBuffer[i]);
         numberOfFlippedBits++;
