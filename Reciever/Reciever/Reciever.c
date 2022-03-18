@@ -93,7 +93,7 @@ void readBlockFromSocket() {
             exit(1);
         }
         blockBitLength = encodedBlockLength;
-        if (encodedBitsFileBuffer[encodedBlockLength-1] == '\0') {
+        if (encodedBitsFileBuffer[encodedBlockLength-1] == '\0') { // checking for "real" block length
             blockBitLength = strlen(encodedBitsFileBuffer);
         }
         /*for (int i = 0; i < encodedBlockLength; i++) {
@@ -107,6 +107,7 @@ void readBlockFromSocket() {
 }
 
 int IsCheckBitWrong(int number) {
+    // Comparing parity bits andn their corresponding calculations
     int sum = 0;
     char checkBit = encodedBitsFileBuffer[number - 1];
     encodedBitsFileBuffer[number - 1] = '0';
@@ -124,6 +125,7 @@ int IsCheckBitWrong(int number) {
 }
 
 void copyToDecodedBuffer() {
+    // Coping from encodedBitsFileBuffer to relevant places in decodedBitsFileBuffer
     int decodedIndex = 0;
     for (int encodedIndex = 0; encodedIndex < encodedBlockLength; encodedIndex++) {
         if (encodedIndex != 0 && encodedIndex != 1 && encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
@@ -141,6 +143,7 @@ char flipBit(char bit) {
 }
 
 void hummingDecode() {
+    // Checking parity bits and correcting if needed
     int errorIndex = 0;
     for (int i = 0; i < 5; i++) {
         int power = ((int)(pow(2, i)));
@@ -154,6 +157,7 @@ void hummingDecode() {
 }
 
 void writeBlockToSectionBuffer(int startIndexInSection) {
+    // Writing from decodedBitsFileBuffer to sectionFileBuffer
     for (int i = startIndexInSection; i < (startIndexInSection + originalBlockLength); i++) {
         sectionFileBuffer[i] = decodedBitsFileBuffer[i % originalBlockLength];
     }
@@ -242,12 +246,12 @@ int main(int argc, char* argv[]) {
                 }
                 hummingDecode();
                 writeBlockToSectionBuffer(i);
-                createBlockBuffers();
+                createBlockBuffers(); // changing block buffers values to 0
             }
             if (sectionFileBuffer[0] != '\0') {
                 translateSectionFromCharBitsToBytes();
                 writeSectionToFile();
-                createSectionBuffers();
+                createSectionBuffers(); // changing block buffers values to 0
             }
             if (finished == 1) {
                 break;

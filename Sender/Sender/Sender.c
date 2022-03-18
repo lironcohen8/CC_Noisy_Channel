@@ -103,12 +103,14 @@ void generateParityBit(int number) {
 }
 
 void addHummingCheckBits() {
+    // Generating 5 parity bits
     for (int i = 0; i < 5; i++) {
         generateParityBit((int)(pow(2, i)));
     }
 }
 
 void copyDataToEncodedBuffer(int startIndexInSection) {
+    // Copying from originalBitsFileBuffer to relevant places in encodedBitsFileBuffer
     int originalIndex = startIndexInSection;
     for (int encodedIndex = 0; encodedIndex < encodedBlockLength; encodedIndex++) {
         if (encodedIndex != 0 && encodedIndex != 1 && encodedIndex != 3 && encodedIndex != 7 && encodedIndex != 15) {
