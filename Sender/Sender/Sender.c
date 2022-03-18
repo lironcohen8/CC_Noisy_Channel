@@ -179,6 +179,7 @@ int main(int argc, char* argv[]) {
 
         // Reading file content to buffer
         while (1) {
+            createBuffers(); // init buffers for every iteration
             readSectionFromFile();
             if (finished == 1) {
                 break;
