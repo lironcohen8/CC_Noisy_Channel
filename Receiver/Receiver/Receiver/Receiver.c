@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS // Used for enabling usage of functions like fopen in vs
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +7,7 @@
 #define originalBlockLength 26
 #define encodedBlockLength 31
 #define extendedBufferLength 208 // 26 bytes * 8 bits per bytes
-#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "ws2_32.lib") // Used to link the library Ws2_32.lib for windows socketing
 
 WSADATA wsaData;
 char* fileName, * channelReceiverIPString, * encodedBitsFileBuffer, * decodedBitsFileBuffer, * sectionFileBuffer, * bytesFileBuffer;
@@ -28,11 +28,6 @@ void connectToSocket() {
     // Creating channel address struct
     channelAddr.sin_family = AF_INET;
     inet_pton(AF_INET, (PCSTR)channelReceiverIPString, &(channelAddr.sin_addr.s_addr));
-    /*channelAddr.sin_addr.s_addr = inet_addr(channelSenderIPString);
-    if (channelAddr.sin_addr.s_addr == INADDR_NONE) {
-        perror("Can't convert channel IP string to long");
-        exit(1);
-    }*/
     channelAddr.sin_port = htons(channelreceiverPort);
 
     // Connecting to server

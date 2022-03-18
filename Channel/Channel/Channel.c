@@ -1,5 +1,5 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS // Used for enabling usage of functions like gethostbyname in vs
+#define _CRT_SECURE_NO_WARNINGS // Used for enabling usage of functions like fopen in vs
 #include <stdio.h>
 #include <math.h>
 #include <winsock2.h>
@@ -7,7 +7,7 @@
 #define originalBlockLength 26
 #define encodedBlockLength 31
 #define extendedBufferLength 208 // 26 bytes * 8 bits per bytes
-#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "ws2_32.lib") // Used to link the library Ws2_32.lib for windows socketing
 
 WSADATA wsaData;
 char* noiseMethod, * dataBuffer, * IPAddress, shouldContinue[4], * hostBuffer;

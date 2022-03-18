@@ -1,2 +1,4 @@
 ﻿  Sender.c
-  Sender.vcxproj -> C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Sender\Debug\Sender.exe
+C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Sender\Sender\Sender.c(166,14): error C4996: 'scanf': This function or variable may be unsafe. Consider using scanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Sender\Sender\Sender.c(170,23): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Sender\Sender\Sender.c(209,18): error C4996: 'scanf': This function or variable may be unsafe. Consider using scanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
