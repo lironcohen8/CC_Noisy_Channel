@@ -1,3 +1,2 @@
 ﻿  Channel.c
-C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Channel\Channel\Channel.c(60,17): error C4996: 'gethostbyname': Use getaddrinfo() or GetAddrInfoW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
-C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Channel\Channel\Channel.c(62,17): error C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  Channel.vcxproj -> C:\Users\user\OneDrive\Desktop\Liron\Studies\CC\CC_Noisy_Channel\Channel\Debug\Channel.exe
